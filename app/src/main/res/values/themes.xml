@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SmartBoarding" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#6C5CE7</item>
+        <item name="colorPrimaryVariant">#5A4BD1</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#0984E3</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="android:statusBarColor">#5A4BD1</item>
+        <item name="android:windowBackground">#F8F9FA</item>
+    </style>
+
+    <style name="Theme.SmartBoarding.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:statusBarColor">#6C5CE7</item>
+        <item name="android:windowBackground">#6C5CE7</item>
+    </style>
+
+    <style name="Widget.SmartBoarding.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">#6C5CE7</item>
+        <item name="android:textColor">#6C5CE7</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+</resources>

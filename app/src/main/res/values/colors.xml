@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary gradient colors từ Figma -->
+    <color name="purple_primary">#6C5CE7</color>
+    <color name="blue_primary">#0984E3</color>
+    <color name="purple_dark">#5A4BD1</color>
+    <color name="purple_light">#A29BFE</color>
+
+    <!-- Status colors -->
+    <color name="orange_warning">#FDCB6E</color>
+    <color name="orange_maintenance">#E17055</color>
+    <color name="green_success">#00B894</color>
+    <color name="red_danger">#D63031</color>
+    <color name="blue_info">#0984E3</color>
+
+    <!-- Neutral -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="text_primary">#2D3436</color>
+    <color name="text_secondary">#636E72</color>
+    <color name="text_hint">#B2BEC3</color>
+    <color name="bg_light">#F8F9FA</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="divider">#DFE6E9</color>
+
+    <!-- Status badge -->
+    <color name="badge_unpaid_bg">#FFF3CD</color>
+    <color name="badge_unpaid_text">#856404</color>
+    <color name="badge_paid_bg">#D4EDDA</color>
+    <color name="badge_paid_text">#155724</color>
+    <color name="badge_overdue_bg">#F8D7DA</color>
+    <color name="badge_overdue_text">#721C24</color>
+    <color name="badge_processing_bg">#CCE5FF</color>
+    <color name="badge_processing_text">#004085</color>
+
+
+    <color name="icon_blue">#2196F3</color>
+    <color name="icon_yellow">#FFC107</color>
+    <color name="icon_teal">#009688</color>
+    <color name="icon_red">#F44336</color>
+
+    <color name="warning_text">#E65100</color>
+</resources>

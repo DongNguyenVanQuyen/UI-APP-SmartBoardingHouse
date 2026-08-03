@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SmartBoarding</string>
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="login">Đăng nhập</string>
+    <string name="register">Đăng ký</string>
+    <string name="email">Email</string>
+    <string name="password">Mật khẩu</string>
+    <string name="full_name">Họ và tên</string>
+    <string name="phone">Số điện thoại</string>
+    <string name="dashboard">Trang chủ</string>
+    <string name="invoice">Hóa đơn</string>
+    <string name="maintenance">Sửa chữa</string>
+    <string name="profile">Tài khoản</string>
+    <string name="loading">Đang tải...</string>
+    <string name="retry">Thử lại</string>
+    <string name="cancel">Hủy</string>
+    <string name="save">Lưu</string>
+    <string name="send">Gửi</string>
+    <string name="pay_now">Thanh toán</string>
+    <string name="detail">Chi tiết</string>
+</resources>

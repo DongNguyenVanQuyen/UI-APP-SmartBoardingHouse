@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.SmartBoarding"
+        android:usesCleartextTraffic="true">
+        <activity
+            android:name=".ui.auth.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartBoarding.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".fcm.AppFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <activity
+            android:name=".ui.auth.LoginActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.auth.RegisterActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.invoice.InvoiceDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.maintenance.MaintenanceDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.maintenance.CreateMaintenanceActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.payment.PaymentActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.meter.MeterReadingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.message.ChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.statistics.StatisticsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.profile.ChangePasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.auth.ForgotPasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.profile.EditProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.notification.NotificationDetailActivity"
+            android:exported="false" />
+    </application>
+
+</manifest>

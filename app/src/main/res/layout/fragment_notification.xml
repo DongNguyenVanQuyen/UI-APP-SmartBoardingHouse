@@ -1,0 +1,83 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F7">
+
+    <LinearLayout
+        android:id="@+id/layoutHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="28dp"
+        android:paddingBottom="20dp"
+        android:background="@drawable/bg_header_gradient">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Thông báo"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/tvMarkAllRead"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="6dp"
+            android:text="Đánh dấu tất cả đã đọc"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/layoutHeader">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvNotifications"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingTop="4dp"
+            android:clipToPadding="false" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:alpha="0.4"
+            android:src="@drawable/ic_notification_empty" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Chưa có thông báo nào"
+            android:textColor="#9E9E9E" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true" />
+</RelativeLayout>
