@@ -79,6 +79,25 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
+            <!-- Loại công tơ: Điện / Nước — đặt NGOÀI layoutCamera và layoutManual để luôn hiển thị
+                 ở cả 2 màn (trước đây nằm trong layoutManual nên lúc đang ở màn Camera không chọn được,
+                 khiến app luôn ngầm định "Điện" khi tải chỉ số kỳ trước và khi chụp/scan). -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="Loại công tơ"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/spinnerType"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_input"
+                android:paddingHorizontal="12dp" />
+
             <!-- CAMERA STATE (mặc định visible) -->
             <LinearLayout
                 android:id="@+id/layoutCamera"
@@ -123,19 +142,31 @@
                         android:id="@+id/btnCapture"
                         android:layout_width="0dp"
                         android:layout_height="48dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:background="@drawable/gradient_button"
                         android:text="Chụp"
-                        android:textColor="@color/white" />
+                        android:textColor="@color/white"
+                        android:textSize="13sp" />
+
+                    <Button
+                        android:id="@+id/btnPickImage"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:text="Chọn ảnh"
+                        android:textSize="13sp"
+                        style="@style/Widget.SmartBoarding.Button.Outlined" />
 
                     <Button
                         android:id="@+id/btnManual"
                         android:layout_width="0dp"
                         android:layout_height="48dp"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
                         android:text="Nhập tay"
+                        android:textSize="13sp"
                         style="@style/Widget.SmartBoarding.Button.Outlined" />
                 </LinearLayout>
             </LinearLayout>
@@ -182,22 +213,6 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp"
                             android:visibility="gone" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="6dp"
-                            android:text="Loại công tơ"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="13sp" />
-
-                        <Spinner
-                            android:id="@+id/spinnerType"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:layout_marginBottom="16dp"
-                            android:background="@drawable/bg_input"
-                            android:paddingHorizontal="12dp" />
 
                         <!-- Chỉ số hiện tại — tự điền từ Gemini, người dùng kiểm tra/sửa -->
                         <com.google.android.material.textfield.TextInputLayout

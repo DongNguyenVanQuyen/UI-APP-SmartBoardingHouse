@@ -1,6 +1,7 @@
 package com.smartboarding.ui;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -68,6 +69,21 @@ public class MainActivity extends AppCompatActivity {
             loadFragment(fragment);
             return true;
         });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // Quan trọng: khi MainActivity đã đang chạy sẵn (app ở background),
+        // Android sẽ gọi onNewIntent() thay vì onCreate() khi bấm vào push notification.
+        // Nếu không cập nhật intent + xử lý ở đây, extra "open_tab" sẽ bị bỏ qua
+        // và app không tự chuyển sang tab Thông báo như mong muốn.
+        setIntent(intent);
+
+        String openTab = intent.getStringExtra("open_tab");
+        if ("notifications".equals(openTab) && binding != null) {
+            binding.bottomNav.setSelectedItemId(R.id.nav_notification);
+        }
     }
 
     private void loadFragment(Fragment fragment) {

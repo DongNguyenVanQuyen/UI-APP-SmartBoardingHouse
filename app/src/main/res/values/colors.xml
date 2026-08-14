@@ -32,6 +32,8 @@
     <color name="badge_overdue_text">#721C24</color>
     <color name="badge_processing_bg">#CCE5FF</color>
     <color name="badge_processing_text">#004085</color>
+    <color name="badge_expired_bg">#E2E3E5</color>
+    <color name="badge_expired_text">#41464B</color>
 
 
     <color name="icon_blue">#2196F3</color>

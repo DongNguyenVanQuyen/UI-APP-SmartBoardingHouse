@@ -78,6 +78,7 @@ public class FormatUtils {
             case "cancelled":  return "Đã hủy";
             case "active":     return "Đang hiệu lực";
             case "expired":    return "Hết hạn";
+            case "terminated": return "Đã chấm dứt";
             case "electric":   return "Điện";
             case "water":      return "Nước";
             default:           return status;

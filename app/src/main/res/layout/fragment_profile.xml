@@ -333,6 +333,16 @@
                     android:paddingHorizontal="16dp"/>
 
                 <TextView
+                    android:id="@+id/btnContract"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Hợp đồng"
+                    android:drawableStart="@android:drawable/ic_menu_agenda"
+                    android:drawablePadding="12dp"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp"/>
+
+                <TextView
                     android:id="@+id/btnStatistics"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"

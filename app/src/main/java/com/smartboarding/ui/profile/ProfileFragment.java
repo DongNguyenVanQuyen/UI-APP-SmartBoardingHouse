@@ -15,6 +15,7 @@ import com.smartboarding.data.models.RoomData;
 import com.smartboarding.data.models.Tenant;
 import com.smartboarding.databinding.FragmentProfileBinding;
 import com.smartboarding.ui.auth.LoginActivity;
+import com.smartboarding.ui.contract.ContractActivity;
 import com.smartboarding.ui.message.ChatActivity;
 import com.smartboarding.ui.statistics.StatisticsActivity;
 import com.smartboarding.utils.FormatUtils;
@@ -50,6 +51,9 @@ public class ProfileFragment extends Fragment {
 
         binding.btnChat.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), ChatActivity.class)));
+
+        binding.btnContract.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), ContractActivity.class)));
 
         binding.btnStatistics.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), StatisticsActivity.class)));

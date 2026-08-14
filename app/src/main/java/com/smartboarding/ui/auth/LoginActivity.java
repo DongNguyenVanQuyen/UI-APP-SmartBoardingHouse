@@ -53,8 +53,7 @@ public class LoginActivity extends AppCompatActivity {
             viewModel.login(email, password);
         });
 
-        binding.tvRegister.setOnClickListener(v ->
-                startActivity(new Intent(this, RegisterActivity.class)));
+
 
         binding.tvForgotPassword.setOnClickListener(v ->
                 startActivity(new Intent(this, ForgotPasswordActivity.class)));

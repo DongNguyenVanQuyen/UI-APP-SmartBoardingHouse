@@ -2,6 +2,7 @@ package com.smartboarding.ui.notification;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -139,6 +140,8 @@ public class NotificationFragment extends Fragment {
                 progressBar.setVisibility(View.GONE);
                 swipeRefresh.setRefreshing(false);
                 updateEmptyState();
+                // Log rõ nguyên nhân thật (timeout, parse lỗi, mất mạng...) để debug thay vì chỉ biết "thất bại"
+                Log.e("NotificationFragment", "Lỗi tải thông báo", t);
                 Toast.makeText(requireContext(), "Không tải được thông báo", Toast.LENGTH_SHORT).show();
             }
         });

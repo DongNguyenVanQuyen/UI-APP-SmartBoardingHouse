@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
+import android.util.Size;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
@@ -17,6 +19,7 @@ import androidx.camera.core.*;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.smartboarding.data.api.RetrofitClient;
 import com.smartboarding.data.models.ApiResponse;
@@ -26,6 +29,10 @@ import com.smartboarding.data.models.MeterScanResult;
 import com.smartboarding.databinding.ActivityMeterReadingBinding;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.concurrent.ExecutionException;
 
 import okhttp3.MediaType;
@@ -36,6 +43,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MeterReadingActivity extends AppCompatActivity {
+
+    private static final String TAG = "MeterReadingActivity";
 
     private ActivityMeterReadingBinding binding;
     private ImageCapture imageCapture;
@@ -51,6 +60,20 @@ public class MeterReadingActivity extends AppCompatActivity {
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
                 if (granted) startCamera();
                 else Toast.makeText(this, "Cần quyền camera để chụp ảnh công tơ", Toast.LENGTH_SHORT).show();
+            });
+
+    // Chọn ảnh có sẵn từ thư viện thay vì chụp trực tiếp.
+    // GetContent() dùng Storage Access Framework / Photo Picker hệ thống nên không cần xin quyền runtime.
+    private final ActivityResultLauncher<String> pickImage =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri == null) return;
+                try {
+                    File file = copyUriToCacheFile(uri);
+                    showCapturedImageAndScan(file, uri);
+                } catch (IOException e) {
+                    Log.e(TAG, "Lỗi đọc ảnh từ thư viện", e);
+                    Toast.makeText(this, "Không đọc được ảnh đã chọn", Toast.LENGTH_SHORT).show();
+                }
             });
 
     @Override
@@ -87,6 +110,7 @@ public class MeterReadingActivity extends AppCompatActivity {
         }
 
         binding.btnCapture.setOnClickListener(v -> captureAndScan());
+        binding.btnPickImage.setOnClickListener(v -> pickImage.launch("image/*"));
         binding.btnManual.setOnClickListener(v -> {
             binding.layoutCamera.setVisibility(View.GONE);
             binding.layoutManual.setVisibility(View.VISIBLE);
@@ -167,6 +191,10 @@ public class MeterReadingActivity extends AppCompatActivity {
 
                 imageCapture = new ImageCapture.Builder()
                         .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                        // Giới hạn độ phân giải chụp — nếu không set, CameraX mặc định chọn độ phân giải
+                        // tối đa của cảm biến (vd 4096x3072 ~ 12MP), khiến decode/hiển thị ảnh cực nặng
+                        // (dễ out-of-memory hoặc treo khi hiển thị 2 ImageView cùng lúc) và upload rất chậm.
+                        .setTargetResolution(new Size(1600, 1200))
                         .build();
 
                 provider.unbindAll();
@@ -196,25 +224,57 @@ public class MeterReadingActivity extends AppCompatActivity {
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults output) {
-                        capturedImageUri = Uri.fromFile(capturedFile);
-                        binding.ivCaptured.setImageURI(capturedImageUri);
-                        binding.ivCaptured.setVisibility(View.VISIBLE);
                         binding.btnCapture.setEnabled(true);
-
-                        // Chuyển sang form nhập — từ đây dùng tvOcrResultForm
-                        binding.layoutCamera.setVisibility(View.GONE);
-                        binding.layoutManual.setVisibility(View.VISIBLE);
-                        binding.ivCapturedInForm.setImageURI(capturedImageUri);
-                        binding.ivCapturedInForm.setVisibility(View.VISIBLE);
-
-                        callScanApi(capturedFile);
+                        capturedImageUri = Uri.fromFile(capturedFile);
+                        showCapturedImageAndScan(capturedFile, capturedImageUri);
                     }
                     @Override
                     public void onError(@NonNull ImageCaptureException e) {
                         binding.btnCapture.setEnabled(true);
+                        Log.e(TAG, "Chụp ảnh thất bại", e);
                         binding.tvOcrResult.setText("Chụp thất bại, thử lại"); // vẫn ở màn camera
                     }
                 });
+    }
+
+    /**
+     * Hiển thị ảnh (vừa chụp hoặc vừa chọn từ thư viện) rồi chuyển sang form nhập + gọi Gemini scan.
+     * Dùng Glide thay vì ImageView.setImageURI() trực tiếp: setImageURI decode ảnh ở ĐỘ PHÂN GIẢI GỐC,
+     * với ảnh camera lớn (vài nghìn x vài nghìn pixel) rất dễ out-of-memory hoặc treo UI, khiến ảnh
+     * "không hiện ra". Glide tự downsample theo kích thước ImageView nên nhẹ và luôn hiển thị được.
+     */
+    private void showCapturedImageAndScan(File file, Uri displayUri) {
+        capturedFile = file;
+        capturedImageUri = displayUri;
+        scannedImageUrl = null;
+        scannedOcrRawText = null;
+
+        Glide.with(this).load(displayUri).into(binding.ivCaptured);
+        binding.ivCaptured.setVisibility(View.VISIBLE);
+
+        // Chuyển sang form nhập — từ đây dùng tvOcrResultForm
+        binding.layoutCamera.setVisibility(View.GONE);
+        binding.layoutManual.setVisibility(View.VISIBLE);
+
+        Glide.with(this).load(displayUri).into(binding.ivCapturedInForm);
+        binding.ivCapturedInForm.setVisibility(View.VISIBLE);
+
+        callScanApi(file);
+    }
+
+    /** Copy nội dung ảnh chọn từ thư viện (content://) ra 1 file thật trong cache để upload multipart. */
+    private File copyUriToCacheFile(Uri uri) throws IOException {
+        File out = new File(getCacheDir(), "meter_pick_" + System.currentTimeMillis() + ".jpg");
+        try (InputStream in = getContentResolver().openInputStream(uri);
+             OutputStream os = new FileOutputStream(out)) {
+            if (in == null) throw new IOException("Không mở được ảnh đã chọn");
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = in.read(buf)) != -1) {
+                os.write(buf, 0, len);
+            }
+        }
+        return out;
     }
 
     private void callScanApi(File imageFile) {
@@ -262,15 +322,27 @@ public class MeterReadingActivity extends AppCompatActivity {
                                                 + "\nBấm Lưu để cập nhật bằng ảnh và số mới.");
                             }
                         } else {
-                            binding.tvOcrResultForm.setText("Không đọc được, vui lòng nhập tay");
+                            Log.e(TAG, "Scan API trả lỗi: code=" + response.code()
+                                    + " body=" + safeErrorBody(response));
+                            binding.tvOcrResultForm.setText(
+                                    "Không đọc được số bằng AI (server lỗi), vui lòng nhập tay số trên công tơ");
                         }
                     }
                     @Override
                     public void onFailure(Call<ApiResponse<MeterScanResult>> call, Throwable t) {
                         binding.btnSubmit.setEnabled(true);
+                        Log.e(TAG, "Lỗi kết nối khi gọi scan API", t);
                         binding.tvOcrResultForm.setText("Lỗi kết nối khi đọc ảnh, vui lòng nhập tay");
                     }
                 });
+    }
+
+    private String safeErrorBody(Response<?> response) {
+        try {
+            return response.errorBody() != null ? response.errorBody().string() : "(rỗng)";
+        } catch (IOException e) {
+            return "(không đọc được error body)";
+        }
     }
 
     private void submitReading() {

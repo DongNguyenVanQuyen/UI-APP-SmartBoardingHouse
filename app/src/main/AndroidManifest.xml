@@ -19,13 +19,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartBoarding"
         android:usesCleartextTraffic="true">
+
         <activity
             android:name=".ui.auth.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartBoarding.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -41,46 +41,71 @@
         <activity
             android:name=".ui.auth.LoginActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.auth.RegisterActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.MainActivity"
+            android:launchMode="singleTop"
             android:exported="false" />
+
         <activity
             android:name=".ui.invoice.InvoiceDetailActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".ui.contract.ContractActivity"
+            android:exported="false" />
+
         <activity
             android:name=".ui.maintenance.MaintenanceDetailActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.maintenance.CreateMaintenanceActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.payment.PaymentActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.meter.MeterReadingActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.message.ChatActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- Màn hình xem ảnh toàn màn hình -->
+        <activity
+            android:name=".ui.message.ImagePreviewActivity"
+            android:exported="false"
+            android:screenOrientation="unspecified" />
+
         <activity
             android:name=".ui.statistics.StatisticsActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.profile.ChangePasswordActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.auth.ForgotPasswordActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.profile.EditProfileActivity"
             android:exported="false" />
+
         <activity
             android:name=".ui.notification.NotificationDetailActivity"
             android:exported="false" />
+
     </application>
 
 </manifest>
