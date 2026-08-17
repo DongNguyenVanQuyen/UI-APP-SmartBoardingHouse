@@ -25,6 +25,16 @@ public class DashboardData {
     @SerializedName("contract")
     public Contract contract;
 
+    // Danh sách phòng (theo hợp đồng còn hiệu lực) mà tenant có thể chuyển
+    // tới — dùng cho nút/màn "Chuyển phòng" ở Dashboard.
+    @SerializedName("rooms")
+    public java.util.List<RoomOption> rooms;
+
+    // true nếu tenant đang thuê từ 2 phòng trở lên cùng lúc — app chỉ nên
+    // hiện nút "Chuyển phòng" khi giá trị này = true.
+    @SerializedName("hasMultipleRooms")
+    public boolean hasMultipleRooms;
+
     public static class Stats {
 
         @SerializedName("rentAmount")

@@ -1,11 +1,16 @@
 package com.smartboarding.ui.maintenance;
 
+import android.app.Dialog;
 import android.os.Bundle;
 import android.view.View;
+import android.view.Window;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.bumptech.glide.Glide;
 import com.smartboarding.R;
 import com.smartboarding.data.api.RetrofitClient;
 import com.smartboarding.data.models.ApiResponse;
@@ -60,6 +65,23 @@ public class MaintenanceDetailActivity extends AppCompatActivity {
         binding.tvPriority.setText(priorityVi(req.priority));
         binding.tvCategory.setText(categoryVi(req.category));
 
+        // 🟢 BỔ SUNG: Hiển thị tên phòng
+        if (req.room != null && req.room.roomNumber != null) {
+            binding.tvRoom.setText("Phòng " + req.room.roomNumber);
+        } else {
+            binding.tvRoom.setText("Phòng: Không xác định");
+        }
+
+        if (req.images != null && !req.images.isEmpty()) {
+            binding.layoutImagesSection.setVisibility(View.VISIBLE);
+            binding.rvImages.setLayoutManager(
+                    new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+            binding.rvImages.setAdapter(
+                    new MaintenanceImageAdapter(req.images, this::showFullScreenImage));
+        } else {
+            binding.layoutImagesSection.setVisibility(View.GONE);
+        }
+
         if (req.adminNote != null && !req.adminNote.isEmpty()) {
             binding.tvAdminNote.setVisibility(View.VISIBLE);
             binding.tvAdminNoteLabel.setVisibility(View.VISIBLE);
@@ -68,28 +90,58 @@ public class MaintenanceDetailActivity extends AppCompatActivity {
 
         switch (req.status != null ? req.status : "") {
             case "processing":
-                binding.tvStatus.setText("🔧 Đang xử lý");
+                binding.tvStatus.setText("Đang xử lý");
                 binding.tvStatus.setTextColor(getColor(R.color.badge_processing_text));
                 binding.tvStatus.setBackgroundResource(R.drawable.bg_badge_processing);
+                if (req.updatedAt != null) {
+                    binding.tvUpdateAt.setVisibility(View.VISIBLE);
+                    binding.tvUpdateAt.setText("Chấp nhận xử lý lúc: " + FormatUtils.formatDate(req.updatedAt));
+                }
                 break;
             case "completed":
-                binding.tvStatus.setText("✅ Hoàn thành");
+                binding.tvStatus.setText("Hoàn thành");
                 binding.tvStatus.setTextColor(getColor(R.color.badge_paid_text));
                 binding.tvStatus.setBackgroundResource(R.drawable.bg_badge_paid);
-                if (req.resolvedAt != null) {
-                    binding.tvResolvedAt.setVisibility(View.VISIBLE);
-                    binding.tvResolvedAt.setText("Hoàn thành: " + FormatUtils.formatDate(req.resolvedAt));
+                if (req.updatedAt != null) {
+                    binding.tvUpdateAt.setVisibility(View.VISIBLE);
+                    binding.tvUpdateAt.setText("Hoàn thành lúc: " + FormatUtils.formatDate(req.updatedAt));
                 }
                 break;
             case "cancelled":
                 binding.tvStatus.setText("Đã hủy");
                 binding.tvStatus.setTextColor(getColor(R.color.text_secondary));
+                if (req.updatedAt != null) {
+                    binding.tvUpdateAt.setVisibility(View.VISIBLE);
+                    binding.tvUpdateAt.setText("Đã hủy lúc: " + FormatUtils.formatDate(req.updatedAt));
+                }
                 break;
             default:
-                binding.tvStatus.setText("⏳ Đang chờ xử lý");
+                binding.tvStatus.setText("Đang chờ xử lý");
                 binding.tvStatus.setTextColor(getColor(R.color.badge_unpaid_text));
                 binding.tvStatus.setBackgroundResource(R.drawable.bg_badge_unpaid);
+                if (req.updatedAt != null) {
+                    binding.tvUpdateAt.setVisibility(View.VISIBLE);
+                    binding.tvUpdateAt.setText("Chấp nhận xử lý lúc: " + FormatUtils.formatDate(req.updatedAt));
+                }
         }
+    }
+
+    private void showFullScreenImage(String url) {
+        Dialog dialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        ImageView imageView = new ImageView(this);
+        imageView.setLayoutParams(new android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
+        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        imageView.setBackgroundColor(getColor(android.R.color.black));
+        imageView.setOnClickListener(v -> dialog.dismiss());
+
+        Glide.with(this).load(url).into(imageView);
+
+        dialog.setContentView(imageView);
+        dialog.show();
     }
 
     private String priorityVi(String p) {

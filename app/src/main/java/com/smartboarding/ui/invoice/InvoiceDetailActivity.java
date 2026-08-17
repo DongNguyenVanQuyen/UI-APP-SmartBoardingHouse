@@ -1,13 +1,16 @@
 package com.smartboarding.ui.invoice;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.widget.*;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
 import com.smartboarding.R;
 import com.smartboarding.data.api.ApiService;
 import com.smartboarding.data.api.RetrofitClient;
@@ -41,8 +44,6 @@ public class InvoiceDetailActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Luôn tải lại để đảm bảo hiển thị đúng trạng thái mới nhất
-        // (vd sau khi vừa thanh toán xong ở màn hình khác).
         if (invoiceId != null) loadInvoice();
     }
 
@@ -50,8 +51,6 @@ public class InvoiceDetailActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_PAYMENT && resultCode == RESULT_OK) {
-            // Thanh toán vừa xong — thoát hẳn ra khỏi trang chi tiết hóa đơn
-            // (ra danh sách hóa đơn), thay vì hiển thị lại dữ liệu cũ.
             finish();
         }
     }
@@ -70,24 +69,23 @@ public class InvoiceDetailActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ApiResponse<Invoice>> call, Throwable t) {
                 binding.progressBar.setVisibility(View.GONE);
-
                 Log.e("INVOICE_ERROR", Log.getStackTraceString(t));
-
-                Toast.makeText(
-                        InvoiceDetailActivity.this,
-                        t.getMessage(),
-                        Toast.LENGTH_LONG
-                ).show();
+                Toast.makeText(InvoiceDetailActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
 
     private void bindInvoice(Invoice inv) {
-        binding.tvTitle.setText("Hóa đơn Tháng " + inv.month + "/" + inv.year);
+        boolean isDeposit = "deposit".equals(inv.type);
+        binding.tvTitle.setText(isDeposit
+                ? "Hóa đơn tiền cọc hợp đồng"
+                : "Hóa đơn Tháng " + inv.month + "/" + inv.year);
         binding.tvDueDate.setText("Hạn: " + FormatUtils.formatDate(inv.dueDate));
         binding.tvTotalAmount.setText(FormatUtils.formatCurrency(inv.totalAmount));
         binding.tvPaidAmount.setText(FormatUtils.formatCurrency(inv.paidAmount));
         binding.tvRemaining.setText(FormatUtils.formatCurrency(inv.totalAmount - inv.paidAmount));
+
+        binding.btnPay.setVisibility(View.VISIBLE);
 
         switch (inv.status != null ? inv.status : "") {
             case "paid":
@@ -95,11 +93,34 @@ public class InvoiceDetailActivity extends AppCompatActivity {
                 binding.tvStatus.setTextColor(getColor(R.color.badge_paid_text));
                 binding.tvStatus.setBackgroundResource(R.drawable.bg_badge_paid);
                 binding.btnPay.setVisibility(View.GONE);
+
+                if (isDeposit && inv.contract != null
+                        && inv.contract.status != null
+                        && !"active".equals(inv.contract.status)) {
+                    Toast.makeText(this,
+                            "Hợp đồng đã kết thúc — vui lòng liên hệ quản lý để nhận lại tiền cọc",
+                            Toast.LENGTH_LONG).show();
+                }
+                break;
+            case "pending":
+                binding.tvStatus.setText("Đang chờ duyệt");
+                binding.tvStatus.setTextColor(getColor(R.color.badge_processing_text));
+                binding.tvStatus.setBackgroundResource(R.drawable.bg_badge_processing);
+                binding.btnPay.setVisibility(View.GONE); // Đã gửi ảnh chờ duyệt thì ẩn nút QR thanh toán đi
                 break;
             case "overdue":
                 binding.tvStatus.setText("Quá hạn");
                 binding.tvStatus.setTextColor(getColor(R.color.badge_overdue_text));
                 binding.tvStatus.setBackgroundResource(R.drawable.bg_badge_overdue);
+                break;
+            case "cancelled":
+                binding.tvStatus.setText("Đã hủy");
+                binding.tvStatus.setTextColor(getColor(R.color.badge_expired_text));
+                binding.tvStatus.setBackgroundResource(R.drawable.bg_badge_expired);
+                binding.btnPay.setVisibility(View.GONE);
+                Toast.makeText(this,
+                        "Hóa đơn này đã bị hủy do hợp đồng liên quan đã kết thúc",
+                        Toast.LENGTH_LONG).show();
                 break;
             default:
                 binding.tvStatus.setText("Chưa thanh toán");
@@ -108,6 +129,19 @@ public class InvoiceDetailActivity extends AppCompatActivity {
         }
 
         buildInvoiceItemRows(inv, binding.layoutItems);
+
+        // HIỂN THỊ ẢNH MINH CHỨNG (NẾU CÓ)
+        if (inv.receiptImage != null && !inv.receiptImage.trim().isEmpty()) {
+            binding.cardReceipt.setVisibility(View.VISIBLE);
+            Glide.with(this)
+                    .load(inv.receiptImage)
+                    .into(binding.ivReceipt);
+
+            // Bấm vào ảnh để xem full màn hình
+            binding.ivReceipt.setOnClickListener(v -> showFullScreenImage(inv.receiptImage));
+        } else {
+            binding.cardReceipt.setVisibility(View.GONE);
+        }
 
         binding.btnPay.setOnClickListener(v -> {
             Intent intent = new Intent(this, PaymentActivity.class);
@@ -123,11 +157,32 @@ public class InvoiceDetailActivity extends AppCompatActivity {
                 Toast.makeText(this, "Tính năng đang phát triển", Toast.LENGTH_SHORT).show());
     }
 
-    // Hiển thị đầy đủ tiền phòng/điện/nước/dịch vụ từ các field cố định của hóa đơn,
-    // rồi mới thêm các khoản phụ phí khác trong items[] (bỏ qua item nào trùng tên
-    // với tiền phòng/điện/nước để tránh hiển thị lặp với dữ liệu cũ).
+    // HÀM HIỂN THỊ ẢNH FULL MÀN HÌNH
+    private void showFullScreenImage(String url) {
+        Dialog dialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        ImageView imageView = new ImageView(this);
+        imageView.setLayoutParams(new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        imageView.setBackgroundColor(getColor(android.R.color.black));
+        imageView.setOnClickListener(v -> dialog.dismiss());
+
+        Glide.with(this).load(url).into(imageView);
+
+        dialog.setContentView(imageView);
+        dialog.show();
+    }
+
     private void buildInvoiceItemRows(Invoice inv, LinearLayout container) {
         container.removeAllViews();
+
+        if ("deposit".equals(inv.type)) {
+            addItemRow(container, "Tiền cọc hợp đồng", inv.depositAmount);
+            return;
+        }
 
         if (inv.roomPrice > 0) {
             addItemRow(container, "Tiền phòng", inv.roomPrice);

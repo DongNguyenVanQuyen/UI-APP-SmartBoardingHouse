@@ -14,4 +14,6 @@ public class Tenant {
     @SerializedName("address")    public String address;
     @SerializedName("isActive")   public boolean isActive;
     @SerializedName("createdAt")  public String createdAt;
+    @SerializedName("frontImage") public String frontImage;
+    @SerializedName("backImage")  public String backImage;
 }

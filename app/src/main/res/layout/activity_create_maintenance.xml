@@ -61,6 +61,26 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
+                    <!-- 🟢 THÊM: Phần chọn phòng (Tự động ẩn nếu chỉ có 1 phòng) -->
+                    <TextView
+                        android:id="@+id/tvRoomLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="6dp"
+                        android:text="Chọn phòng"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+
+                    <Spinner
+                        android:id="@+id/spinnerRoom"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="@drawable/bg_input"
+                        android:paddingHorizontal="12dp"
+                        android:visibility="gone" />
+
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

@@ -110,6 +110,22 @@
                                 android:textSize="13sp"/>
                         </LinearLayout>
 
+                        <!-- Chỉ hiện khi tenant đang thuê từ 2 phòng trở lên
+                             (rooms.size > 1 / hasMultipleRooms = true) -->
+                        <TextView
+                            android:id="@+id/btnSwitchRoom"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="12dp"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"
+                            android:background="@drawable/bg_badge_unpaid"
+                            android:text="Chọn phòng"
+                            android:textColor="@color/blue_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:visibility="gone"/>
+
                         <com.mikepenz.iconics.view.IconicsImageView
                             android:layout_width="32dp"
                             android:layout_height="32dp"

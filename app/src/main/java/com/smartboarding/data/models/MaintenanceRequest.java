@@ -12,6 +12,6 @@ public class MaintenanceRequest {
     @SerializedName("priority")    public String priority;
     @SerializedName("category")    public String category;
     @SerializedName("adminNote")   public String adminNote;
-    @SerializedName("resolvedAt")  public String resolvedAt;
     @SerializedName("createdAt")   public String createdAt;
+    @SerializedName("updatedAt")   public String updatedAt;
 }

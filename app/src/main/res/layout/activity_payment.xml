@@ -113,6 +113,33 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
+                <!-- KHU VỰC ĐÍNH KÈM ẢNH MINH CHỨNG -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Minh chứng giao dịch (Tùy chọn)"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <ImageView
+                    android:id="@+id/ivReceipt"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/bg_input"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+                <Button
+                    android:id="@+id/btnSelectReceipt"
+                    style="@style/Widget.SmartBoarding.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginBottom="24dp"
+                    android:text="Đính kèm ảnh chụp màn hình" />
+                <!-- KẾT THÚC KHU VỰC ĐÍNH KÈM -->
+
                 <ProgressBar
                     android:id="@+id/progressBar"
                     android:layout_width="wrap_content"

@@ -2,6 +2,7 @@ package com.smartboarding.viewmodel;
 
 import android.app.Application;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
 
@@ -22,6 +23,13 @@ public class DashboardViewModel extends AndroidViewModel {
 
     public final MutableLiveData<DashboardData> dashboard = new MutableLiveData<>();
     public final MutableLiveData<List<Invoice>> invoices = new MutableLiveData<>();
+    // Danh sách hợp đồng của tenant — dùng để hiển thị bộ lọc theo phòng/hợp đồng
+    // ở màn hình hóa đơn (1 tenant có thể có nhiều hợp đồng).
+    public final MutableLiveData<List<Contract>> contracts = new MutableLiveData<>();
+    // Danh sách phòng CHỈ theo hợp đồng còn hiệu lực (active) — dùng cho bộ
+    // lọc/chuyển phòng ở màn Hóa đơn. Không dùng "contracts" ở trên nữa vì nó
+    // trả về mọi trạng thái hợp đồng (kể cả đã hủy/hết hạn), gây trùng phòng.
+    public final MutableLiveData<List<RoomOption>> invoiceRooms = new MutableLiveData<>();
     public final MutableLiveData<List<MaintenanceRequest>> maintenanceRequests = new MutableLiveData<>();
     public final MutableLiveData<NotificationData> notifications = new MutableLiveData<>();
     public final MutableLiveData<DebtData> debts = new MutableLiveData<>();
@@ -54,8 +62,40 @@ public class DashboardViewModel extends AndroidViewModel {
         });
     }
 
+    // Chuyển "phòng đang chọn" (dựa vào hợp đồng — bắt buộc hợp đồng còn hiệu
+    // lực). Dùng chung cho nút "Chuyển phòng" ở Dashboard: sau khi chuyển,
+    // backend trả về ngay dashboard mới nhất theo phòng vừa chọn.
+    public void selectDashboardRoom(String contractId) {
+        loading.setValue(true);
+        Map<String, String> body = new HashMap<>();
+        body.put("contractId", contractId);
+        api.selectDashboardRoom(body).enqueue(new Callback<ApiResponse<DashboardData>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<DashboardData>> call, Response<ApiResponse<DashboardData>> response) {
+                loading.setValue(false);
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    dashboard.setValue(response.body().getData());
+                } else {
+                    error.setValue("Không thể chuyển phòng — hợp đồng không hợp lệ hoặc đã hết hiệu lực");
+                }
+            }
+            @Override
+            public void onFailure(Call<ApiResponse<DashboardData>> call, Throwable t) {
+                loading.setValue(false);
+                error.setValue("Lỗi kết nối: " + t.getMessage());
+            }
+        });
+    }
+
     public void loadInvoices() {
-        api.getInvoices().enqueue(new Callback<ApiResponse<List<Invoice>>>() {
+        loadInvoices(null);
+    }
+
+    // contractId == null -> tải TẤT CẢ hóa đơn của tenant (mọi hợp đồng).
+    // contractId != null -> chỉ tải hóa đơn của riêng hợp đồng/phòng đó
+    // (dùng cho bộ lọc trên màn hình danh sách hóa đơn).
+    public void loadInvoices(@Nullable String contractId) {
+        api.getInvoicesFiltered(contractId, null).enqueue(new Callback<ApiResponse<List<Invoice>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Invoice>>> call, Response<ApiResponse<List<Invoice>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
@@ -65,6 +105,66 @@ public class DashboardViewModel extends AndroidViewModel {
             @Override
             public void onFailure(Call<ApiResponse<List<Invoice>>> call, Throwable t) {
                 error.setValue("Lỗi tải hóa đơn");
+            }
+        });
+    }
+
+    // Tải danh sách hợp đồng để hiển thị bộ lọc theo phòng/hợp đồng.
+    public void loadContracts() {
+        api.getContracts().enqueue(new Callback<ApiResponse<List<Contract>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<Contract>>> call, Response<ApiResponse<List<Contract>>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    contracts.setValue(response.body().getData());
+                }
+            }
+            @Override
+            public void onFailure(Call<ApiResponse<List<Contract>>> call, Throwable t) {
+                // Không chặn màn hình hóa đơn nếu tải hợp đồng lỗi — chỉ đơn giản
+                // là không hiển thị được bộ lọc.
+            }
+        });
+    }
+
+    // Danh sách phòng CHỈ theo hợp đồng còn hiệu lực — dùng cho bộ lọc/chuyển
+    // phòng ở màn Hóa đơn (thay cho loadContracts() cũ vốn trả về mọi trạng
+    // thái hợp đồng và gây trùng phòng khi có hợp đồng đã hủy/hết hạn).
+    public void loadInvoiceRooms() {
+        api.getInvoiceRooms().enqueue(new Callback<ApiResponse<List<RoomOption>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<RoomOption>>> call, Response<ApiResponse<List<RoomOption>>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    invoiceRooms.setValue(response.body().getData());
+                }
+            }
+            @Override
+            public void onFailure(Call<ApiResponse<List<RoomOption>>> call, Throwable t) {
+                // Không chặn màn hình hóa đơn nếu tải danh sách phòng lỗi.
+            }
+        });
+    }
+
+    // Chuyển phòng đang chọn ngay tại màn Hóa đơn (hợp đồng phải còn hiệu
+    // lực) — dùng chung "phòng đang chọn" với Dashboard/chụp công tơ.
+    public void selectInvoiceRoom(String contractId) {
+        loading.setValue(true);
+        Map<String, String> body = new HashMap<>();
+        body.put("contractId", contractId);
+        api.selectInvoiceRoom(body).enqueue(new Callback<ApiResponse<List<Invoice>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<Invoice>>> call, Response<ApiResponse<List<Invoice>>> response) {
+                loading.setValue(false);
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    invoices.setValue(response.body().getData());
+                    loadInvoiceRooms(); // reload để cập nhật cờ isSelected
+                } else {
+                    error.setValue("Không thể chuyển phòng — hợp đồng không hợp lệ hoặc đã hết hiệu lực");
+                }
+            }
+            @Override
+            public void onFailure(Call<ApiResponse<List<Invoice>>> call, Throwable t) {
+                loading.setValue(false);
+                error.setValue("Lỗi kết nối: " + t.getMessage());
             }
         });
     }

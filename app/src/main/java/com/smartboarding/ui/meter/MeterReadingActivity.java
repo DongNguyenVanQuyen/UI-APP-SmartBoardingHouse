@@ -25,6 +25,7 @@ import com.smartboarding.data.api.RetrofitClient;
 import com.smartboarding.data.models.ApiResponse;
 import com.smartboarding.data.models.MeterReading;
 import com.smartboarding.data.models.MeterReadingPrevious;
+import com.smartboarding.data.models.MeterRoomOption;
 import com.smartboarding.data.models.MeterScanResult;
 import com.smartboarding.databinding.ActivityMeterReadingBinding;
 
@@ -33,6 +34,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import okhttp3.MediaType;
@@ -55,6 +58,12 @@ public class MeterReadingActivity extends AppCompatActivity {
     private String scannedImageUrl = null;
     private String scannedOcrRawText = null;
     private File capturedFile = null;
+
+    // Danh sách phòng (hợp đồng) tenant có thể chọn để ghi chỉ số, và phòng
+    // đang được chọn hiện tại. selectedContractId == null nghĩa là tenant chỉ
+    // có đúng 1 hợp đồng — server sẽ tự chọn hợp đồng đó, không cần chọn.
+    private final List<MeterRoomOption> roomOptions = new ArrayList<>();
+    private String selectedContractId = null;
 
     private final ActivityResultLauncher<String> requestCamera =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
@@ -100,7 +109,9 @@ public class MeterReadingActivity extends AppCompatActivity {
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
-        loadPreviousReading();
+        // Tải danh sách phòng trước — nếu tenant có nhiều phòng thì hiện Spinner
+        // chọn phòng, sau đó mới tải chỉ số kỳ trước theo đúng phòng đã chọn.
+        loadRoomOptions();
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -140,13 +151,82 @@ public class MeterReadingActivity extends AppCompatActivity {
         binding.etCurrentReading.setText("");
     }
 
+    /**
+     * Tải danh sách phòng (theo hợp đồng active) mà tenant có thể chọn để ghi
+     * chỉ số. Nếu tenant chỉ có 1 phòng thì ẩn Spinner và để server tự chọn
+     * (tương thích ngược). Nếu có từ 2 phòng trở lên thì hiện Spinner chọn
+     * phòng — người dùng PHẢI chọn phòng trước khi chụp/nhập chỉ số, vì mỗi
+     * lần đổi phòng dữ liệu (chỉ số kỳ trước, ảnh đã gửi tháng này...) phải
+     * được lấy lại đúng theo phòng đó, không được dùng lẫn dữ liệu phòng khác.
+     */
+    private void loadRoomOptions() {
+        RetrofitClient.getInstance(this).getApi()
+                .getMeterRooms()
+                .enqueue(new Callback<ApiResponse<List<MeterRoomOption>>>() {
+                    @Override
+                    public void onResponse(Call<ApiResponse<List<MeterRoomOption>>> call,
+                                           Response<ApiResponse<List<MeterRoomOption>>> response) {
+                        if (response.isSuccessful() && response.body() != null
+                                && response.body().isSuccess() && response.body().getData() != null) {
+                            roomOptions.clear();
+                            roomOptions.addAll(response.body().getData());
+                        }
+                        setupRoomSpinner();
+                    }
+                    @Override
+                    public void onFailure(Call<ApiResponse<List<MeterRoomOption>>> call, Throwable t) {
+                        Log.e(TAG, "Không tải được danh sách phòng", t);
+                        // Không chặn màn hình — vẫn cho thao tác bình thường như khi
+                        // chỉ có 1 phòng (server sẽ tự chọn hợp đồng active duy nhất).
+                        setupRoomSpinner();
+                    }
+                });
+    }
+
+    private void setupRoomSpinner() {
+        if (roomOptions.size() < 2) {
+            // Chỉ 0 hoặc 1 phòng — không cần chọn, để server tự xử lý.
+            binding.layoutRoomSelect.setVisibility(View.GONE);
+            selectedContractId = roomOptions.size() == 1 ? roomOptions.get(0).contractId : null;
+            loadPreviousReading();
+            return;
+        }
+
+        List<String> labels = new ArrayList<>();
+        for (MeterRoomOption r : roomOptions) {
+            labels.add("Phòng " + r.roomNumber);
+        }
+
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_dropdown_item, labels);
+        binding.spinnerRoom.setAdapter(spinnerAdapter);
+        binding.layoutRoomSelect.setVisibility(View.VISIBLE);
+
+        binding.spinnerRoom.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                selectedContractId = roomOptions.get(position).contractId;
+                // Đổi phòng -> xoá dữ liệu ảnh/scan cũ và tải lại chỉ số kỳ
+                // trước cho ĐÚNG phòng vừa chọn, tránh lẫn dữ liệu giữa các phòng.
+                resetScanState();
+                loadPreviousReading();
+            }
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+
+        // Mặc định chọn phòng đầu tiên trong danh sách.
+        selectedContractId = roomOptions.get(0).contractId;
+        loadPreviousReading();
+    }
+
     private void loadPreviousReading() {
         String typeVal = binding.spinnerType.getSelectedItemPosition() == 0 ? "electric" : "water";
 
         binding.tvPreviousReading.setText("Đang tải chỉ số kỳ trước...");
 
         RetrofitClient.getInstance(this).getApi()
-                .getPreviousReading(typeVal)
+                .getPreviousReading(typeVal, selectedContractId)
                 .enqueue(new Callback<ApiResponse<MeterReadingPrevious>>() {
                     @Override
                     public void onResponse(Call<ApiResponse<MeterReadingPrevious>> call,
@@ -171,6 +251,19 @@ public class MeterReadingActivity extends AppCompatActivity {
                             } else {
                                 existingReadingId = null;
                                 binding.layoutAlreadySubmitted.setVisibility(View.GONE);
+                            }
+                        } else {
+                            // Trường hợp hiếm: danh sách phòng tải lỗi trước đó nên chưa
+                            // chọn được phòng, mà tenant lại có nhiều phòng -> server từ
+                            // chối (400) và yêu cầu chọn phòng. Báo rõ cho người dùng.
+                            String msg = response.body() != null && response.body().getMessage() != null
+                                    ? response.body().getMessage()
+                                    : "Không tải được chỉ số kỳ trước";
+                            binding.tvPreviousReading.setText(msg);
+                            if (response.code() == 400) {
+                                Toast.makeText(MeterReadingActivity.this,
+                                        "Bạn đang thuê nhiều phòng — vui lòng thử lại để chọn phòng",
+                                        Toast.LENGTH_LONG).show();
                             }
                         }
                     }
@@ -285,12 +378,14 @@ public class MeterReadingActivity extends AppCompatActivity {
         String typeVal = binding.spinnerType.getSelectedItemPosition() == 0 ? "electric" : "water";
 
         RequestBody rbType = RequestBody.create(typeVal, MediaType.parse("text/plain"));
+        RequestBody rbContract = selectedContractId != null
+                ? RequestBody.create(selectedContractId, MediaType.parse("text/plain")) : null;
         RequestBody rbImage = RequestBody.create(imageFile, MediaType.parse("image/jpeg"));
         MultipartBody.Part imagePart =
                 MultipartBody.Part.createFormData("image", imageFile.getName(), rbImage);
 
         RetrofitClient.getInstance(this).getApi()
-                .scanMeterImage(rbType, imagePart)
+                .scanMeterImage(rbType, rbContract, imagePart)
                 .enqueue(new Callback<ApiResponse<MeterScanResult>>() {
                     @Override
                     public void onResponse(Call<ApiResponse<MeterScanResult>> call,
@@ -375,6 +470,10 @@ public class MeterReadingActivity extends AppCompatActivity {
 
         RequestBody rbType    = RequestBody.create(typeVal,    MediaType.parse("text/plain"));
         RequestBody rbReading = RequestBody.create(currentStr, MediaType.parse("text/plain"));
+        // Phòng đã chọn — đảm bảo chỉ số/hóa đơn được lưu đúng cho phòng đó,
+        // không lẫn với hợp đồng khác của cùng tenant.
+        RequestBody rbContract = selectedContractId != null
+                ? RequestBody.create(selectedContractId, MediaType.parse("text/plain")) : null;
 
         if (scannedImageUrl != null) {
             RequestBody rbImageUrl = RequestBody.create(scannedImageUrl, MediaType.parse("text/plain"));
@@ -382,7 +481,7 @@ public class MeterReadingActivity extends AppCompatActivity {
                     ? RequestBody.create(scannedOcrRawText, MediaType.parse("text/plain")) : null;
 
             RetrofitClient.getInstance(this).getApi()
-                    .createMeterReadingWithUrl(rbType, rbReading, rbImageUrl, rbOcr)
+                    .createMeterReadingWithUrl(rbType, rbReading, rbImageUrl, rbOcr, rbContract)
                     .enqueue(buildCreateCallback());
         } else if (capturedFile != null) {
             RequestBody rbImage = RequestBody.create(capturedFile, MediaType.parse("image/jpeg"));
@@ -390,12 +489,12 @@ public class MeterReadingActivity extends AppCompatActivity {
                     MultipartBody.Part.createFormData("image", capturedFile.getName(), rbImage);
 
             RetrofitClient.getInstance(this).getApi()
-                    .createMeterReading(rbType, rbReading, imagePart)
+                    .createMeterReading(rbType, rbReading, rbContract, imagePart)
                     .enqueue(buildCreateCallback());
         } else {
             // Nhập tay, không có ảnh — vẫn gửi được, chỉ cần bỏ trống phần ảnh.
             RetrofitClient.getInstance(this).getApi()
-                    .createMeterReading(rbType, rbReading, null)
+                    .createMeterReading(rbType, rbReading, rbContract, null)
                     .enqueue(buildCreateCallback());
         }
     }

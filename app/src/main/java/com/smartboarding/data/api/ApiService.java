@@ -46,6 +46,12 @@ public interface ApiService {
     @POST("profile/avatar")
     Call<ApiResponse<AvatarData>> updateAvatar(@Part MultipartBody.Part avatar);
 
+    @Multipart
+    @POST("profile/identity-card")
+    Call<ApiResponse<AvatarData>> uploadIdentityCard(
+            @Part MultipartBody.Part frontImage,
+            @Part MultipartBody.Part backImage
+    );
     // ─── ROOM ───────────────────────────────────────────
     @GET("rooms/current")
     Call<ApiResponse<RoomData>> getCurrentRoom();
@@ -64,8 +70,28 @@ public interface ApiService {
     @GET("invoices")
     Call<ApiResponse<List<Invoice>>> getInvoicesByStatus(@Query("status") String status);
 
+    // Lọc hóa đơn theo hợp đồng (contract) và/hoặc loại hóa đơn (rent/deposit).
+    // Truyền null cho tham số nào không cần lọc.
+    @GET("invoices")
+    Call<ApiResponse<List<Invoice>>> getInvoicesFiltered(
+            @Query("contract") String contractId,
+            @Query("type") String type);
+
     @GET("invoices/{id}")
     Call<ApiResponse<Invoice>> getInvoiceById(@Path("id") String id);
+
+    // Danh sách phòng CHỈ theo hợp đồng còn hiệu lực (active) — dùng cho bộ
+    // lọc/chuyển phòng ở màn hóa đơn. Không dùng getContracts() nữa vì
+    // endpoint đó trả về TẤT CẢ hợp đồng (kể cả đã hủy/hết hạn), gây trùng
+    // phòng trên bộ lọc.
+    @GET("invoices/rooms")
+    Call<ApiResponse<List<RoomOption>>> getInvoiceRooms();
+
+    // Chuyển phòng đang chọn ngay tại màn hóa đơn — hợp đồng của phòng muốn
+    // chuyển tới bắt buộc phải còn hiệu lực. Trả về danh sách hóa đơn của
+    // phòng vừa chuyển.
+    @PATCH("invoices/select-room")
+    Call<ApiResponse<List<Invoice>>> selectInvoiceRoom(@Body Map<String, String> body);
 
     // ─── DEBT ───────────────────────────────────────────
     @GET("debts")
@@ -88,17 +114,32 @@ public interface ApiService {
     @POST("/pay/{token}/confirm")
     Call<ApiResponse<PaymentResult>> confirmPayment(@Path("token") String token);
 
+    @Multipart
+    @POST("/pay/{token}/confirm")
+    Call<ApiResponse<PaymentResult>> confirmPaymentWithReceipt(
+            @Path("token") String token,
+            @Part MultipartBody.Part receiptImage
+    );
     // ─── METER READING ──────────────────────────────────
 
+    // Danh sách phòng (theo hợp đồng active) để chọn khi ghi chỉ số —
+    // dùng cho màn hình chọn phòng khi tenant có nhiều hợp đồng cùng lúc.
+    @GET("meter-readings/rooms")
+    Call<ApiResponse<List<MeterRoomOption>>> getMeterRooms();
+
+    // contractId có thể null nếu tenant chỉ có đúng 1 hợp đồng đang active
+    // (server tự chọn hợp đồng duy nhất đó); bắt buộc truyền nếu có nhiều hợp đồng.
     @GET("meter-readings/previous")
     Call<ApiResponse<MeterReadingPrevious>> getPreviousReading(
-            @Query("type") String type
+            @Query("type") String type,
+            @Query("contract") String contractId
     );
 
     @Multipart
     @POST("meter-readings/scan")
     Call<ApiResponse<MeterScanResult>> scanMeterImage(
             @Part("type") RequestBody type,
+            @Part("contract") RequestBody contractId,
             @Part MultipartBody.Part image
     );
 
@@ -108,7 +149,8 @@ public interface ApiService {
             @Part("type") RequestBody type,
             @Part("currentReading") RequestBody currentReading,
             @Part("imageUrl") RequestBody imageUrl,
-            @Part("ocrRawText") RequestBody ocrRawText
+            @Part("ocrRawText") RequestBody ocrRawText,
+            @Part("contract") RequestBody contractId
     );
 
     @Multipart
@@ -116,6 +158,7 @@ public interface ApiService {
     Call<ApiResponse<MeterReading>> createMeterReading(
             @Part("type") RequestBody type,
             @Part("currentReading") RequestBody currentReading,
+            @Part("contract") RequestBody contractId,
             @Part MultipartBody.Part image
     );
 
@@ -144,6 +187,7 @@ public interface ApiService {
             @Part("description") RequestBody description,
             @Part("priority") RequestBody priority,
             @Part("category") RequestBody category,
+            @Part("contract") RequestBody contractId,
             @Part List<MultipartBody.Part> images
     );
 
@@ -183,6 +227,13 @@ public interface ApiService {
     // ─── DASHBOARD ──────────────────────────────────────
     @GET("dashboard")
     Call<ApiResponse<DashboardData>> getDashboard();
+
+    // Chuyển phòng đang chọn (dựa vào hợp đồng, hợp đồng phải còn hiệu lực).
+    // Phòng vừa chuyển sẽ được lưu làm phòng hiện tại, dùng làm mặc định cho
+    // chụp công tơ và cho màn Hóa đơn. Trả về dashboard mới nhất theo phòng
+    // vừa chuyển.
+    @PATCH("dashboard/select-room")
+    Call<ApiResponse<DashboardData>> selectDashboardRoom(@Body Map<String, String> body);
 
     // ─── STATISTICS ─────────────────────────────────────
     @GET("statistics/monthly")

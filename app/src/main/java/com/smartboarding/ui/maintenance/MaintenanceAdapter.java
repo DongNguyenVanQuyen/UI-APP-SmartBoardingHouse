@@ -31,22 +31,31 @@ public class MaintenanceAdapter extends RecyclerView.Adapter<MaintenanceAdapter.
         MaintenanceRequest req = data.get(pos);
         h.tvTitle.setText(req.title);
         h.tvDesc.setText(req.description);
-        h.tvDate.setText(FormatUtils.formatDate(req.createdAt) + " • Ưu tiên: " + priorityVi(req.priority));
+
+        // 🟢 BỔ SUNG: Thêm chuỗi [Phòng xxx] vào trước ngày tháng
+        String roomStr = (req.room != null && req.room.roomNumber != null)
+                ? "[Phòng " + req.room.roomNumber + "] "
+                : "";
+        h.tvDate.setText(roomStr + FormatUtils.formatDate(req.createdAt) + " • Ưu tiên: " + priorityVi(req.priority));
 
         switch (req.status != null ? req.status : "") {
             case "processing":
-                h.tvStatus.setText("🔧 Đang xử lý");
+                h.tvStatus.setText("Đang xử lý");
                 h.tvStatus.setTextColor(h.itemView.getContext().getColor(R.color.badge_processing_text));
                 h.tvStatus.setBackgroundResource(R.drawable.bg_badge_processing);
                 h.tvResolvedAt.setVisibility(View.GONE);
+                if (req.updatedAt != null) {
+                    h.tvResolvedAt.setVisibility(View.VISIBLE);
+                    h.tvResolvedAt.setText("Đang xử lý: " + FormatUtils.formatDate(req.updatedAt));
+                }
                 break;
             case "completed":
-                h.tvStatus.setText("✅ Hoàn thành");
+                h.tvStatus.setText("Hoàn thành");
                 h.tvStatus.setTextColor(h.itemView.getContext().getColor(R.color.badge_paid_text));
                 h.tvStatus.setBackgroundResource(R.drawable.bg_badge_paid);
-                if (req.resolvedAt != null) {
+                if (req.updatedAt != null) {
                     h.tvResolvedAt.setVisibility(View.VISIBLE);
-                    h.tvResolvedAt.setText("Hoàn thành: " + FormatUtils.formatDate(req.resolvedAt));
+                    h.tvResolvedAt.setText("Hoàn thành: " + FormatUtils.formatDate(req.updatedAt));
                 }
                 break;
             case "cancelled":
@@ -54,12 +63,20 @@ public class MaintenanceAdapter extends RecyclerView.Adapter<MaintenanceAdapter.
                 h.tvStatus.setTextColor(h.itemView.getContext().getColor(R.color.text_secondary));
                 h.tvStatus.setBackgroundResource(R.drawable.bg_input);
                 h.tvResolvedAt.setVisibility(View.GONE);
+                if (req.updatedAt != null) {
+                    h.tvResolvedAt.setVisibility(View.VISIBLE);
+                    h.tvResolvedAt.setText("Đã Hủy: " + FormatUtils.formatDate(req.updatedAt));
+                }
                 break;
             default:
-                h.tvStatus.setText("⏳ Đang chờ");
+                h.tvStatus.setText("Đang chờ");
                 h.tvStatus.setTextColor(h.itemView.getContext().getColor(R.color.badge_unpaid_text));
                 h.tvStatus.setBackgroundResource(R.drawable.bg_badge_unpaid);
                 h.tvResolvedAt.setVisibility(View.GONE);
+                if (req.updatedAt != null) {
+                    h.tvResolvedAt.setVisibility(View.VISIBLE);
+                    h.tvResolvedAt.setText("Đã Tạo: " + FormatUtils.formatDate(req.updatedAt));
+                }
         }
         h.itemView.setOnClickListener(v -> listener.onClick(req));
     }

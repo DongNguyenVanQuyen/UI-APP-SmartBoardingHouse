@@ -27,6 +27,34 @@
           android:textStyle="bold"/>
     </LinearLayout>
 
+    <!-- Bộ lọc theo phòng/hợp đồng — hiển thị khi tenant có từ 2 hợp đồng
+         trở lên, để tách riêng hóa đơn của từng hợp đồng. -->
+    <LinearLayout
+        android:id="@+id/layoutContractFilter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="12dp"
+        android:visibility="gone">
+
+      <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="Phòng:"
+          android:textColor="@color/text_secondary"
+          android:textSize="14sp"
+          android:layout_marginEnd="8dp"/>
+
+      <Spinner
+          android:id="@+id/spinnerContractFilter"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_weight="1"/>
+
+    </LinearLayout>
+
     <TextView
         android:id="@+id/tvEmpty"
         android:layout_width="match_parent"
