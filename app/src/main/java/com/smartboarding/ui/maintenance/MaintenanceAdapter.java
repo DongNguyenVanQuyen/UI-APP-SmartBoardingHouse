@@ -19,6 +19,15 @@ public class MaintenanceAdapter extends RecyclerView.Adapter<MaintenanceAdapter.
 
     public MaintenanceAdapter(OnClick listener) { this.listener = listener; }
     public void setData(List<MaintenanceRequest> list) { data = list; notifyDataSetChanged(); }
+    public void appendData(List<MaintenanceRequest> list) {
+        if (list != null) {
+            int startSize = data.size();
+            data.addAll(list);
+            notifyItemRangeInserted(startSize, list.size());
+        }
+    }
+    public void clearData() { data.clear(); notifyDataSetChanged(); }
+    public boolean isEmpty() { return data.isEmpty(); }
 
     @NonNull @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

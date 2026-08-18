@@ -20,7 +20,11 @@ public class YearlyStats {
         @SerializedName("status")      public String status;
     }
     public static class Utilities {
-        @SerializedName("electricTotal") public double electricTotal;
-        @SerializedName("waterTotal")    public double waterTotal;
+        @SerializedName("electric") public UtilityDetail electric;
+        @SerializedName("water")    public UtilityDetail water;
+    }
+    public static class UtilityDetail {
+        @SerializedName("totalCost")  public double totalCost;
+        @SerializedName("totalUsage") public double totalUsage;
     }
 }

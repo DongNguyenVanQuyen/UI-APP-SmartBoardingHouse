@@ -82,9 +82,17 @@ public class CreateMaintenanceActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ApiResponse<List<RoomOption>>> call, Response<ApiResponse<List<RoomOption>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
-                    myRooms = response.body().getData();
+                    List<RoomOption> allRooms = response.body().getData();
+                    myRooms = new ArrayList<>();
+                    if (allRooms != null) {
+                        for (RoomOption r : allRooms) {
+                            if (r.contractId != null && !r.contractId.equals("all") && r.roomNumber != null && !r.roomNumber.contains("Đã kết thúc")) {
+                                myRooms.add(r);
+                            }
+                        }
+                    }
 
-                    if (myRooms != null && !myRooms.isEmpty()) {
+                    if (!myRooms.isEmpty()) {
                         List<String> roomNames = new ArrayList<>();
                         int selectedIndex = 0;
 
@@ -108,6 +116,9 @@ public class CreateMaintenanceActivity extends AppCompatActivity {
                             binding.tvRoomLabel.setVisibility(View.GONE);
                             binding.spinnerRoom.setVisibility(View.GONE);
                         }
+                    } else {
+                        binding.tvRoomLabel.setVisibility(View.GONE);
+                        binding.spinnerRoom.setVisibility(View.GONE);
                     }
                 }
             }
@@ -134,6 +145,17 @@ public class CreateMaintenanceActivity extends AppCompatActivity {
             return;
         }
 
+        // 🟢 Lấy contractId từ phòng được chọn trong Spinner
+        String currentContractId = "";
+        if (myRooms != null && !myRooms.isEmpty() && binding.spinnerRoom.getSelectedItemPosition() >= 0) {
+            currentContractId = myRooms.get(binding.spinnerRoom.getSelectedItemPosition()).contractId;
+        }
+
+        if (currentContractId.isEmpty()) {
+            Toast.makeText(this, "Bạn không có hợp đồng phòng nào đang hoạt động để yêu cầu sửa chữa", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.btnSubmit.setEnabled(false);
 
@@ -141,12 +163,6 @@ public class CreateMaintenanceActivity extends AppCompatActivity {
         String priority = priorityValues[binding.spinnerPriority.getSelectedItemPosition()];
         String[] categoryValues = {"electrical", "plumbing", "furniture", "other"};
         String category = categoryValues[binding.spinnerCategory.getSelectedItemPosition()];
-
-        // 🟢 Lấy contractId từ phòng được chọn trong Spinner
-        String currentContractId = "";
-        if (myRooms != null && !myRooms.isEmpty() && binding.spinnerRoom.getSelectedItemPosition() >= 0) {
-            currentContractId = myRooms.get(binding.spinnerRoom.getSelectedItemPosition()).contractId;
-        }
 
         RequestBody rbTitle    = RequestBody.create(title, MediaType.parse("text/plain"));
         RequestBody rbDesc     = RequestBody.create(desc, MediaType.parse("text/plain"));

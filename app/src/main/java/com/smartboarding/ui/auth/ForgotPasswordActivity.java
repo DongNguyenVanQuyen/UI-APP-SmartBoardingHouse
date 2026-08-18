@@ -28,14 +28,16 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     private String submittedEmail;
 
     private static final Pattern EMAIL_PATTERN = Patterns_EMAIL();
-
-    @Override
+    private android.os.CountDownTimer resendTimer;
+    private int originalResendColor;    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityForgotPasswordBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         api = RetrofitClient.getInstance(this).getApi();
+        originalResendColor = binding.tvResendOtp.getCurrentTextColor();
+
 
         binding.btnBack.setOnClickListener(v -> {
             if (isOtpStep) {
@@ -85,6 +87,8 @@ public class ForgotPasswordActivity extends AppCompatActivity {
                     Toast.makeText(ForgotPasswordActivity.this,
                             "Mã OTP đã được gửi tới email của bạn", Toast.LENGTH_LONG).show();
                     showOtpStep();
+                    startResendTimer();
+
                 } else {
                     Toast.makeText(ForgotPasswordActivity.this,
                             "Không gửi được mã OTP, thử lại sau", Toast.LENGTH_SHORT).show();
@@ -105,6 +109,8 @@ public class ForgotPasswordActivity extends AppCompatActivity {
                 ? binding.etOtp.getText().toString().trim() : "";
         String newPassword = binding.etNewPassword.getText() != null
                 ? binding.etNewPassword.getText().toString().trim() : "";
+        String confirmPassword = binding.etConfirmPassword.getText() != null
+                ? binding.etConfirmPassword.getText().toString().trim() : "";
 
         if (otp.isEmpty() || otp.length() != 6) {
             Toast.makeText(this, "Vui lòng nhập đủ 6 số OTP", Toast.LENGTH_SHORT).show();
@@ -112,6 +118,14 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         }
         if (newPassword.length() < 6) {
             Toast.makeText(this, "Mật khẩu mới phải ít nhất 6 ký tự", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (confirmPassword.isEmpty()) {
+            Toast.makeText(this, "Vui lòng xác nhận mật khẩu mới", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            Toast.makeText(this, "Mật khẩu xác nhận không trùng khớp", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -163,5 +177,36 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     private void setLoading(boolean loading) {
         binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
         binding.btnAction.setEnabled(!loading);
+    }
+
+    private void startResendTimer() {
+        if (resendTimer != null) {
+            resendTimer.cancel();
+        }
+
+        binding.tvResendOtp.setEnabled(false);
+        binding.tvResendOtp.setTextColor(android.graphics.Color.GRAY);
+
+        resendTimer = new android.os.CountDownTimer(60000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                binding.tvResendOtp.setText("Gửi lại sau " + (millisUntilFinished / 1000) + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                binding.tvResendOtp.setEnabled(true);
+                binding.tvResendOtp.setText("Gửi lại mã OTP");
+                binding.tvResendOtp.setTextColor(originalResendColor);
+            }
+        }.start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (resendTimer != null) {
+            resendTimer.cancel();
+        }
+        super.onDestroy();
     }
 }

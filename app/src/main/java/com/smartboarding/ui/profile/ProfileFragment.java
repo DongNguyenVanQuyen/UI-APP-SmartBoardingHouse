@@ -81,11 +81,14 @@ public class ProfileFragment extends Fragment {
                             binding.tvRole.setText("Người thuê");
                             binding.tvEmail.setText(t.email);
                             binding.tvPhone.setText(t.phone != null ? t.phone : "--");
-                            if (t.avatar != null) {
-                                Glide.with(requireContext()).load(t.avatar)
-                                        .placeholder(R.drawable.ic_avatar_placeholder)
-                                        .circleCrop().into(binding.ivAvatar);
+                            String avatarUrl = t.avatar;
+                            if (avatarUrl == null || avatarUrl.isEmpty()) {
+                                String encodedName = android.net.Uri.encode(t.fullName != null ? t.fullName : "U");
+                                avatarUrl = "https://ui-avatars.com/api/?name=" + encodedName + "&background=random&color=fff&size=128&rounded=true";
                             }
+                            Glide.with(requireContext()).load(avatarUrl)
+                                    .placeholder(R.drawable.ic_avatar_placeholder)
+                                    .circleCrop().into(binding.ivAvatar);
                         }
                     }
                     @Override public void onFailure(Call<ApiResponse<Tenant>> call, Throwable t) {}

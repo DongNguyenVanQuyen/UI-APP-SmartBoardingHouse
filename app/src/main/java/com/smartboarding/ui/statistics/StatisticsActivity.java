@@ -75,8 +75,10 @@ public class StatisticsActivity extends AppCompatActivity {
         binding.tvTotalYear.setText(FormatUtils.formatCurrency(stats.summary.totalYear));
         binding.tvPaidYear.setText(FormatUtils.formatCurrency(stats.summary.paidYear));
         binding.tvDebtYear.setText(FormatUtils.formatCurrency(stats.summary.debtYear));
-        binding.tvElectricTotal.setText(FormatUtils.formatCurrency(stats.utilities.electricTotal));
-        binding.tvWaterTotal.setText(FormatUtils.formatCurrency(stats.utilities.waterTotal));
+        double electricCost = (stats.utilities != null && stats.utilities.electric != null) ? stats.utilities.electric.totalCost : 0;
+        double waterCost = (stats.utilities != null && stats.utilities.water != null) ? stats.utilities.water.totalCost : 0;
+        binding.tvElectricTotal.setText(FormatUtils.formatCurrency(electricCost));
+        binding.tvWaterTotal.setText(FormatUtils.formatCurrency(waterCost));
 
         // Bar chart
         if (stats.monthlyData == null) return;

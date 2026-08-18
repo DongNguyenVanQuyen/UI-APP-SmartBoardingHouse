@@ -153,8 +153,7 @@ public class InvoiceDetailActivity extends AppCompatActivity {
             startActivityForResult(intent, REQ_PAYMENT);
         });
 
-        binding.btnDownload.setOnClickListener(v ->
-                Toast.makeText(this, "Tính năng đang phát triển", Toast.LENGTH_SHORT).show());
+        binding.btnDownload.setOnClickListener(v -> exportInvoiceToPdf(inv));
     }
 
     // HÀM HIỂN THỊ ẢNH FULL MÀN HÌNH
@@ -235,5 +234,141 @@ public class InvoiceDetailActivity extends AppCompatActivity {
         row.addView(tvName);
         row.addView(tvAmt);
         container.addView(row);
+    }
+
+    private void exportInvoiceToPdf(Invoice inv) {
+        try {
+            android.graphics.pdf.PdfDocument document = new android.graphics.pdf.PdfDocument();
+            android.graphics.pdf.PdfDocument.PageInfo pageInfo = new android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, 1).create();
+            android.graphics.pdf.PdfDocument.Page page = document.startPage(pageInfo);
+            android.graphics.Canvas canvas = page.getCanvas();
+
+            android.graphics.Paint titlePaint = new android.graphics.Paint();
+            titlePaint.setColor(android.graphics.Color.parseColor("#6C5CE7")); // purple_primary
+            titlePaint.setTextSize(20);
+            titlePaint.setFakeBoldText(true);
+
+            android.graphics.Paint textPaint = new android.graphics.Paint();
+            textPaint.setColor(android.graphics.Color.BLACK);
+            textPaint.setTextSize(12);
+
+            android.graphics.Paint boldPaint = new android.graphics.Paint();
+            boldPaint.setColor(android.graphics.Color.BLACK);
+            boldPaint.setTextSize(12);
+            boldPaint.setFakeBoldText(true);
+
+            android.graphics.Paint linePaint = new android.graphics.Paint();
+            linePaint.setColor(android.graphics.Color.LTGRAY);
+            linePaint.setStrokeWidth(1);
+
+            int y = 50;
+            canvas.drawText("HÓA ĐƠN THANH TOÁN", 50, y, titlePaint);
+            y += 30;
+            canvas.drawText("Mã hóa đơn: " + (inv.id != null ? inv.id : "--"), 50, y, textPaint);
+            y += 20;
+            canvas.drawText("Tháng/Năm: " + inv.month + "/" + inv.year, 50, y, textPaint);
+            y += 20;
+            canvas.drawText("Hạn thanh toán: " + FormatUtils.formatDate(inv.dueDate), 50, y, textPaint);
+            y += 30;
+
+            canvas.drawLine(50, y, 545, y, linePaint);
+            y += 20;
+
+            canvas.drawText("Phòng: " + (inv.room != null ? inv.room.roomNumber : "--"), 50, y, boldPaint);
+            y += 25;
+
+            // Draw table header
+            canvas.drawText("Khoản mục", 50, y, boldPaint);
+            canvas.drawText("Thành tiền", 450, y, boldPaint);
+            y += 10;
+            canvas.drawLine(50, y, 545, y, linePaint);
+            y += 20;
+
+            // Items
+            if ("deposit".equals(inv.type)) {
+                canvas.drawText("Tiền cọc hợp đồng", 50, y, textPaint);
+                canvas.drawText(FormatUtils.formatCurrency(inv.depositAmount), 450, y, textPaint);
+                y += 25;
+            } else {
+                if (inv.roomPrice > 0) {
+                    canvas.drawText("Tiền phòng", 50, y, textPaint);
+                    canvas.drawText(FormatUtils.formatCurrency(inv.roomPrice), 450, y, textPaint);
+                    y += 25;
+                }
+                if (inv.electricUsage > 0 || inv.electricPrice > 0) {
+                    double electricTotal = inv.electricUsage * inv.electricPrice;
+                    canvas.drawText("Tiền điện (" + (int) inv.electricUsage + " kWh)", 50, y, textPaint);
+                    canvas.drawText(FormatUtils.formatCurrency(electricTotal), 450, y, textPaint);
+                    y += 25;
+                }
+                if (inv.waterUsage > 0 || inv.waterPrice > 0) {
+                    double waterTotal = inv.waterUsage * inv.waterPrice;
+                    canvas.drawText("Tiền nước (" + (int) inv.waterUsage + " m³)", 50, y, textPaint);
+                    canvas.drawText(FormatUtils.formatCurrency(waterTotal), 450, y, textPaint);
+                    y += 25;
+                }
+                if (inv.serviceFee > 0) {
+                    canvas.drawText("Phí dịch vụ", 50, y, textPaint);
+                    canvas.drawText(FormatUtils.formatCurrency(inv.serviceFee), 450, y, textPaint);
+                    y += 25;
+                }
+                if (inv.items != null) {
+                    for (Invoice.InvoiceItem item : inv.items) {
+                        if (isReservedItemName(item.name)) continue;
+                        canvas.drawText(item.name, 50, y, textPaint);
+                        canvas.drawText(FormatUtils.formatCurrency(item.total), 450, y, textPaint);
+                        y += 25;
+                    }
+                }
+            }
+
+            canvas.drawLine(50, y, 545, y, linePaint);
+            y += 25;
+
+            // Totals
+            canvas.drawText("Tổng cộng:", 350, y, boldPaint);
+            canvas.drawText(FormatUtils.formatCurrency(inv.totalAmount), 450, y, boldPaint);
+            y += 20;
+            canvas.drawText("Đã trả:", 350, y, textPaint);
+            canvas.drawText(FormatUtils.formatCurrency(inv.paidAmount), 450, y, textPaint);
+            y += 20;
+            canvas.drawText("Còn nợ:", 350, y, textPaint);
+            canvas.drawText(FormatUtils.formatCurrency(inv.totalAmount - inv.paidAmount), 450, y, textPaint);
+            y += 30;
+
+            // Status
+            canvas.drawText("Trạng thái: " + ("paid".equals(inv.status) ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN"), 50, y, boldPaint);
+
+            document.finishPage(page);
+
+            // Save using MediaStore for scoped storage (Android 10+)
+            String fileName = "HoaDon_" + (inv.room != null ? inv.room.roomNumber : "") + "_" + inv.month + "_" + inv.year + ".pdf";
+
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+            values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
+            values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS);
+
+            android.net.Uri uri = getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri != null) {
+                java.io.OutputStream out = getContentResolver().openOutputStream(uri);
+                document.writeTo(out);
+                document.close();
+                if (out != null) out.close();
+
+                Toast.makeText(this, "Đã lưu hóa đơn vào thư mục Tải về (Downloads)", Toast.LENGTH_LONG).show();
+
+                // Open PDF automatically
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(uri, "application/pdf");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(intent, "Mở hóa đơn với"));
+            } else {
+                Toast.makeText(this, "Không thể lưu tệp PDF", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Lỗi xuất PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        }
     }
 }

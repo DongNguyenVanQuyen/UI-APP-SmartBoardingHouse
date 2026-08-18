@@ -32,6 +32,9 @@ import retrofit2.Response;
 public class ContractActivity extends AppCompatActivity {
 
     private ActivityContractBinding binding;
+    private int currentPage = 1;
+    private boolean isLoading = false;
+    private boolean hasMore = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,42 +44,69 @@ public class ContractActivity extends AppCompatActivity {
 
         binding.btnBack.setOnClickListener(v -> finish());
 
-        loadContracts();
+        binding.scrollView.setOnScrollChangeListener((View.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            if (isLoading || !hasMore) return;
+            View child = binding.scrollView.getChildAt(binding.scrollView.getChildCount() - 1);
+            if (child != null) {
+                int diff = (child.getBottom() - (binding.scrollView.getHeight() + scrollY));
+                if (diff <= dp(32)) {
+                    currentPage++;
+                    loadContracts(false);
+                }
+            }
+        });
+
+        loadContracts(true);
     }
 
-    private void loadContracts() {
+    private void loadContracts(boolean reset) {
+        if (isLoading) return;
+        isLoading = true;
         binding.progressBar.setVisibility(View.VISIBLE);
-        binding.tvEmpty.setVisibility(View.GONE);
+        if (reset) {
+            binding.tvEmpty.setVisibility(View.GONE);
+        }
 
         ApiService api = RetrofitClient.getInstance(this).getApi();
-        api.getContracts().enqueue(new Callback<ApiResponse<List<Contract>>>() {
+        api.getContracts(currentPage, 10).enqueue(new Callback<ApiResponse<List<Contract>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Contract>>> call, Response<ApiResponse<List<Contract>>> response) {
+                isLoading = false;
                 binding.progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     List<Contract> contracts = response.body().getData();
-                    if (contracts == null || contracts.isEmpty()) {
+                    if (contracts == null) contracts = new java.util.ArrayList<>();
+
+                    if (contracts.size() < 10) {
+                        hasMore = false;
+                    }
+
+                    if (reset) {
+                        binding.layoutContracts.removeAllViews();
+                    }
+
+                    if (contracts.isEmpty() && reset) {
                         binding.tvEmpty.setVisibility(View.VISIBLE);
                     } else {
                         renderContracts(contracts);
                     }
                 } else {
-                    binding.tvEmpty.setVisibility(View.VISIBLE);
+                    if (reset) binding.tvEmpty.setVisibility(View.VISIBLE);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<List<Contract>>> call, Throwable t) {
+                isLoading = false;
                 binding.progressBar.setVisibility(View.GONE);
                 Log.e("CONTRACT_ERROR", Log.getStackTraceString(t));
-                binding.tvEmpty.setVisibility(View.VISIBLE);
+                if (reset) binding.tvEmpty.setVisibility(View.VISIBLE);
                 Toast.makeText(ContractActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
 
     private void renderContracts(List<Contract> contracts) {
-        binding.layoutContracts.removeAllViews();
         for (Contract c : contracts) {
             binding.layoutContracts.addView(buildContractCard(c));
         }
@@ -169,6 +199,21 @@ public class ContractActivity extends AppCompatActivity {
             content.addView(tvTerms);
         }
 
+        // Nút tải hợp đồng PDF
+        TextView btnDownloadContract = new TextView(this);
+        LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        btnParams.topMargin = dp(16);
+        btnDownloadContract.setLayoutParams(btnParams);
+        btnDownloadContract.setGravity(android.view.Gravity.CENTER);
+        btnDownloadContract.setText("Tải hợp đồng về máy (PDF)");
+        btnDownloadContract.setTextColor(getColor(R.color.white));
+        btnDownloadContract.setBackgroundResource(R.drawable.gradient_button);
+        btnDownloadContract.setTextSize(14);
+        btnDownloadContract.setTypeface(btnDownloadContract.getTypeface(), android.graphics.Typeface.BOLD);
+        btnDownloadContract.setOnClickListener(v -> exportContractToPdf(c));
+        content.addView(btnDownloadContract);
+
         card.addView(content);
         return card;
     }
@@ -230,9 +275,124 @@ public class ContractActivity extends AppCompatActivity {
         return Math.round(value * density);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        binding = null;
+    private void exportContractToPdf(Contract c) {
+        try {
+            android.graphics.pdf.PdfDocument document = new android.graphics.pdf.PdfDocument();
+            android.graphics.pdf.PdfDocument.PageInfo pageInfo = new android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, 1).create();
+            android.graphics.pdf.PdfDocument.Page page = document.startPage(pageInfo);
+            android.graphics.Canvas canvas = page.getCanvas();
+
+            android.graphics.Paint titlePaint = new android.graphics.Paint();
+            titlePaint.setColor(android.graphics.Color.BLACK);
+            titlePaint.setTextSize(16);
+            titlePaint.setFakeBoldText(true);
+
+            android.graphics.Paint subTitlePaint = new android.graphics.Paint();
+            subTitlePaint.setColor(android.graphics.Color.BLACK);
+            subTitlePaint.setTextSize(14);
+            subTitlePaint.setFakeBoldText(true);
+
+            android.graphics.Paint textPaint = new android.graphics.Paint();
+            textPaint.setColor(android.graphics.Color.BLACK);
+            textPaint.setTextSize(11);
+
+            android.graphics.Paint boldPaint = new android.graphics.Paint();
+            boldPaint.setColor(android.graphics.Color.BLACK);
+            boldPaint.setTextSize(11);
+            boldPaint.setFakeBoldText(true);
+
+            android.graphics.Paint linePaint = new android.graphics.Paint();
+            linePaint.setColor(android.graphics.Color.LTGRAY);
+            linePaint.setStrokeWidth(1);
+
+            int y = 50;
+            canvas.drawText("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", 150, y, subTitlePaint);
+            y += 20;
+            canvas.drawText("Độc lập - Tự do - Hạnh phúc", 220, y, boldPaint);
+            y += 15;
+            canvas.drawLine(150, y, 440, y, linePaint);
+            y += 35;
+
+            canvas.drawText("HỢP ĐỒNG THUÊ PHÒNG TRỌ", 180, y, titlePaint);
+            y += 35;
+
+            canvas.drawText("Hôm nay, ngày " + FormatUtils.formatDate(c.signedDate != null ? c.signedDate : c.startDate) + ", chúng tôi gồm các bên:", 50, y, textPaint);
+            y += 25;
+
+            canvas.drawText("BÊN CHO THUÊ (BÊN A): CHỦ PHÒNG TRỌ SMARTBOARDING", 50, y, boldPaint);
+            y += 20;
+            canvas.drawText("Điện thoại: 0909xxxxxx", 50, y, textPaint);
+            y += 25;
+
+            canvas.drawText("BÊN THUÊ PHÒNG (BÊN B): " + (c.tenantName != null ? c.tenantName : "Khách thuê"), 50, y, boldPaint);
+            y += 20;
+            canvas.drawText("Mã hợp đồng: " + (c.contractNumber != null ? c.contractNumber : "--"), 50, y, textPaint);
+            y += 25;
+
+            canvas.drawLine(50, y, 545, y, linePaint);
+            y += 25;
+
+            canvas.drawText("Hai bên thống nhất ký kết hợp đồng thuê phòng với các điều khoản sau:", 50, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Điều 1: Thông tin phòng thuê", 50, y, boldPaint);
+            y += 20;
+            String roomNumber = c.room != null && c.room.roomNumber != null ? c.room.roomNumber : (c.roomNumber != null ? c.roomNumber : "--");
+            canvas.drawText("- Phòng số: " + roomNumber + " thuộc khu nhà trọ SmartBoarding", 70, y, textPaint);
+            y += 20;
+            double rentPrice = c.room != null ? c.room.price : 0;
+            canvas.drawText("- Tiền thuê phòng hàng tháng: " + FormatUtils.formatCurrency(rentPrice) + " / tháng", 70, y, textPaint);
+            y += 20;
+            canvas.drawText("- Tiền đặt cọc: " + FormatUtils.formatCurrency(c.deposit), 70, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Điều 2: Thời hạn thuê và Thanh toán", 50, y, boldPaint);
+            y += 20;
+            canvas.drawText("- Thời gian thuê bắt đầu từ: " + FormatUtils.formatDate(c.startDate) + " đến ngày " + FormatUtils.formatDate(c.endDate), 70, y, textPaint);
+            y += 20;
+            canvas.drawText("- Ngày thu tiền phòng cố định hàng tháng: Ngày " + c.paymentDate + " hàng tháng.", 70, y, textPaint);
+            y += 25;
+
+            canvas.drawText("Điều 3: Điều khoản sử dụng và Cam kết", 50, y, boldPaint);
+            y += 20;
+            String terms = (c.terms != null && !c.terms.trim().isEmpty()) ? c.terms : "Bên B có trách nhiệm bảo quản tài sản phòng thuê, đóng tiền điện nước và dịch vụ đầy đủ hàng tháng, giữ gìn an ninh trật tự chung.";
+            canvas.drawText("- " + terms, 70, y, textPaint);
+            y += 45;
+
+            canvas.drawText("ĐẠI DIỆN BÊN A (Ký tên)", 80, y, boldPaint);
+            canvas.drawText("ĐẠI DIỆN BÊN B (Ký tên)", 380, y, boldPaint);
+            y += 50;
+
+            document.finishPage(page);
+
+            // Save using MediaStore for scoped storage (Android 10+)
+            String fileName = "HopDongThuePhong_" + roomNumber + "_" + (c.tenantName != null ? c.tenantName.replaceAll("\\s+", "") : "") + ".pdf";
+
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+            values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
+            values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS);
+
+            android.net.Uri uri = getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri != null) {
+                java.io.OutputStream out = getContentResolver().openOutputStream(uri);
+                document.writeTo(out);
+                document.close();
+                if (out != null) out.close();
+
+                Toast.makeText(this, "Đã lưu hợp đồng vào thư mục Tải về (Downloads)", Toast.LENGTH_LONG).show();
+
+                // Open PDF automatically
+                android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+                intent.setDataAndType(uri, "application/pdf");
+                intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(android.content.Intent.createChooser(intent, "Mở hợp đồng với"));
+            } else {
+                Toast.makeText(this, "Không thể lưu tệp hợp đồng PDF", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Lỗi xuất hợp đồng PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        }
     }
 }

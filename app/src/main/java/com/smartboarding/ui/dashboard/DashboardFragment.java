@@ -114,13 +114,16 @@ public class DashboardFragment extends Fragment {
         if (data.tenant != null) {
             binding.tvTenantName.setText(data.tenant.fullName);
 
-            if (data.tenant.avatar != null) {
-                Glide.with(this)
-                        .load(data.tenant.avatar)
-                        .placeholder(R.drawable.ic_avatar_placeholder)
-                        .circleCrop()
-                        .into(binding.ivAvatar);
+            String avatarUrl = data.tenant.avatar;
+            if (avatarUrl == null || avatarUrl.isEmpty()) {
+                String encodedName = android.net.Uri.encode(data.tenant.fullName != null ? data.tenant.fullName : "U");
+                avatarUrl = "https://ui-avatars.com/api/?name=" + encodedName + "&background=random&color=fff&size=128&rounded=true";
             }
+            Glide.with(this)
+                    .load(avatarUrl)
+                    .placeholder(R.drawable.ic_avatar_placeholder)
+                    .circleCrop()
+                    .into(binding.ivAvatar);
         } else {
             binding.tvTenantName.setText(
                     SessionManager.getInstance(requireContext()).getUserName()

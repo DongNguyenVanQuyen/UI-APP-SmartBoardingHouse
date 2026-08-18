@@ -5,33 +5,37 @@ import android.os.Bundle;
 import android.view.*;
 import android.widget.ArrayAdapter;
 import android.widget.AdapterView;
+import android.widget.Toast;
 import androidx.annotation.*;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.*;
-
+import com.smartboarding.data.api.ApiService;
+import com.smartboarding.data.api.RetrofitClient;
+import com.smartboarding.data.models.ApiResponse;
+import com.smartboarding.data.models.Invoice;
 import com.smartboarding.data.models.RoomOption;
 import com.smartboarding.databinding.FragmentInvoiceBinding;
 import com.smartboarding.viewmodel.DashboardViewModel;
-
 import java.util.ArrayList;
 import java.util.List;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class InvoiceFragment extends Fragment {
     private FragmentInvoiceBinding binding;
     private DashboardViewModel viewModel;
     private InvoiceAdapter adapter;
+    private ApiService api;
 
-    // index 0 = "Tất cả phòng" (chỉ lọc hiển thị, KHÔNG đổi phòng đang chọn);
-    // các index còn lại tương ứng 1-1 với danh sách phòng trong roomOptions —
-    // CHỈ gồm hợp đồng còn hiệu lực (active), lấy từ GET /invoices/rooms
-    // (không dùng getContracts() nữa vì trả về mọi trạng thái hợp đồng, gây
-    // trùng phòng khi có hợp đồng đã hủy/hết hạn).
     private final List<RoomOption> roomOptions = new ArrayList<>();
     private String selectedContractId = null;
-    // Chặn callback onItemSelected tự bắn lại khi ta chủ động setSelection()
-    // sau khi danh sách phòng được tải/làm mới.
     private boolean suppressSpinnerCallback = false;
+
+    private int currentPage = 1;
+    private boolean isLoading = false;
+    private boolean hasMore = true;
 
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -43,6 +47,7 @@ public class InvoiceFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         viewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
+        api = RetrofitClient.getInstance(requireContext()).getApi();
 
         adapter = new InvoiceAdapter(invoice -> {
             Intent intent = new Intent(requireContext(), InvoiceDetailActivity.class);
@@ -53,31 +58,68 @@ public class InvoiceFragment extends Fragment {
         binding.recyclerInvoices.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.recyclerInvoices.setAdapter(adapter);
 
-        viewModel.invoices.observe(getViewLifecycleOwner(), list -> {
-            if (list != null) {
-                adapter.setData(list);
-                binding.tvEmpty.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+        binding.recyclerInvoices.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                super.onScrolled(rv, dx, dy);
+                LinearLayoutManager lm = (LinearLayoutManager) rv.getLayoutManager();
+                if (lm == null || isLoading || !hasMore) return;
+                int lastVisible = lm.findLastVisibleItemPosition();
+                if (lastVisible >= adapter.getItemCount() - 3) {
+                    currentPage++;
+                    loadInvoices(false);
+                }
             }
         });
 
         viewModel.invoiceRooms.observe(getViewLifecycleOwner(), this::setupRoomFilter);
 
-        viewModel.loading.observe(getViewLifecycleOwner(), loading ->
-                binding.swipeRefresh.setRefreshing(loading));
-
         binding.swipeRefresh.setOnRefreshListener(() -> {
-            viewModel.loadInvoices(selectedContractId);
+            currentPage = 1;
+            hasMore = true;
+            loadInvoices(true);
             viewModel.loadInvoiceRooms();
         });
 
         viewModel.loadInvoiceRooms();
-        viewModel.loadInvoices(selectedContractId);
+        loadInvoices(true);
     }
 
-    // Chỉ hiển thị bộ lọc khi tenant có từ 2 phòng (hợp đồng active) trở lên
-    // — với 1 phòng thì lọc không có ý nghĩa và chỉ làm rối giao diện.
-    // roomOptions CHỈ gồm hợp đồng còn hiệu lực nên không còn hiện phòng của
-    // hợp đồng đã hủy/hết hạn (vd. không còn trùng "Phòng P202" 2 lần).
+    private void loadInvoices(boolean reset) {
+        if (isLoading) return;
+        isLoading = true;
+        binding.swipeRefresh.setRefreshing(true);
+
+        api.getInvoicesFiltered(selectedContractId, null, currentPage, 10).enqueue(new Callback<ApiResponse<List<Invoice>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<Invoice>>> call, Response<ApiResponse<List<Invoice>>> response) {
+                isLoading = false;
+                binding.swipeRefresh.setRefreshing(false);
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    List<Invoice> list = response.body().getData();
+                    if (list == null) list = new ArrayList<>();
+
+                    if (list.size() < 10) hasMore = false;
+
+                    if (reset) {
+                        adapter.setData(list);
+                    } else {
+                        adapter.appendData(list);
+                    }
+
+                    binding.tvEmpty.setVisibility(adapter.isEmpty() ? View.VISIBLE : View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<Invoice>>> call, Throwable t) {
+                isLoading = false;
+                binding.swipeRefresh.setRefreshing(false);
+                Toast.makeText(requireContext(), "Lỗi tải hóa đơn", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void setupRoomFilter(List<RoomOption> rooms) {
         if (rooms == null || rooms.size() < 2) {
             binding.layoutContractFilter.setVisibility(View.GONE);
@@ -88,17 +130,19 @@ public class InvoiceFragment extends Fragment {
         roomOptions.addAll(rooms);
 
         List<String> labels = new ArrayList<>();
-        labels.add("Chọn Phòng");
-        int selectedIndex = 0; // 0 = "Tất cả phòng" nếu chưa xác định được phòng đang chọn
+        int selectedIndex = 0;
         for (int i = 0; i < roomOptions.size(); i++) {
             RoomOption r = roomOptions.get(i);
-            labels.add("Phòng " + r.roomNumber);
+            if (r.contractId != null && r.contractId.equals("all")) {
+                labels.add(r.roomNumber); // "Tất cả phòng"
+            } else {
+                labels.add("Phòng " + r.roomNumber);
+            }
             if (r.isSelected && selectedContractId == null) {
-                // Lần đầu vào màn: tự chọn đúng phòng đang chọn ở Dashboard.
-                selectedIndex = i + 1;
+                selectedIndex = i;
                 selectedContractId = r.contractId;
             } else if (java.util.Objects.equals(selectedContractId, r.contractId)) {
-                selectedIndex = i + 1;
+                selectedIndex = i;
             }
         }
 
@@ -116,19 +160,12 @@ public class InvoiceFragment extends Fragment {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (suppressSpinnerCallback) return;
 
-                if (position == 0) {
-                    // "Tất cả phòng": chỉ lọc hiển thị, KHÔNG đổi phòng đang chọn.
-                    selectedContractId = null;
-                    viewModel.loadInvoices(null);
-                    return;
-                }
-
-                RoomOption chosen = roomOptions.get(position - 1);
+                RoomOption chosen = roomOptions.get(position);
                 if (!java.util.Objects.equals(chosen.contractId, selectedContractId)) {
                     selectedContractId = chosen.contractId;
-                    // Chuyển phòng thật sự (đồng bộ với Dashboard/chụp công tơ),
-                    // không chỉ lọc hiển thị — đúng yêu cầu "chuyển phòng ở trong invoice".
-                    viewModel.selectInvoiceRoom(chosen.contractId);
+                    currentPage = 1;
+                    hasMore = true;
+                    loadInvoices(true);
                 }
             }
             @Override public void onNothingSelected(AdapterView<?> parent) {}
@@ -140,7 +177,9 @@ public class InvoiceFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (viewModel != null) viewModel.loadInvoices(selectedContractId);
+        currentPage = 1;
+        hasMore = true;
+        loadInvoices(true);
     }
 
     @Override public void onDestroyView() { super.onDestroyView(); binding = null; }

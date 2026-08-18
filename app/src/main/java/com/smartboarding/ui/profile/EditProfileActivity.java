@@ -84,10 +84,14 @@ public class EditProfileActivity extends AppCompatActivity {
                             binding.etIdCard.setText(t.idCard);
                             binding.etAddress.setText(t.address);
 
-                            if (t.avatar != null)
-                                Glide.with(EditProfileActivity.this).load(t.avatar)
-                                        .placeholder(R.drawable.ic_avatar_placeholder)
-                                        .circleCrop().into(binding.ivAvatar);
+                            String avatarUrl = t.avatar;
+                            if (avatarUrl == null || avatarUrl.isEmpty()) {
+                                String encodedName = android.net.Uri.encode(t.fullName != null ? t.fullName : "U");
+                                avatarUrl = "https://ui-avatars.com/api/?name=" + encodedName + "&background=random&color=fff&size=128&rounded=true";
+                            }
+                            Glide.with(EditProfileActivity.this).load(avatarUrl)
+                                    .placeholder(R.drawable.ic_avatar_placeholder)
+                                    .circleCrop().into(binding.ivAvatar);
 
                             if (t.frontImage != null)
                                 Glide.with(EditProfileActivity.this).load(t.frontImage)

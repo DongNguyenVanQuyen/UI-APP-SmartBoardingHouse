@@ -88,14 +88,15 @@ public class DashboardViewModel extends AndroidViewModel {
     }
 
     public void loadInvoices() {
-        loadInvoices(null);
+        loadInvoices(null, 1, 10);
     }
 
-    // contractId == null -> tải TẤT CẢ hóa đơn của tenant (mọi hợp đồng).
-    // contractId != null -> chỉ tải hóa đơn của riêng hợp đồng/phòng đó
-    // (dùng cho bộ lọc trên màn hình danh sách hóa đơn).
     public void loadInvoices(@Nullable String contractId) {
-        api.getInvoicesFiltered(contractId, null).enqueue(new Callback<ApiResponse<List<Invoice>>>() {
+        loadInvoices(contractId, 1, 10);
+    }
+
+    public void loadInvoices(@Nullable String contractId, int page, int limit) {
+        api.getInvoicesFiltered(contractId, null, page, limit).enqueue(new Callback<ApiResponse<List<Invoice>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Invoice>>> call, Response<ApiResponse<List<Invoice>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
@@ -111,7 +112,7 @@ public class DashboardViewModel extends AndroidViewModel {
 
     // Tải danh sách hợp đồng để hiển thị bộ lọc theo phòng/hợp đồng.
     public void loadContracts() {
-        api.getContracts().enqueue(new Callback<ApiResponse<List<Contract>>>() {
+        api.getContracts(null, null).enqueue(new Callback<ApiResponse<List<Contract>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Contract>>> call, Response<ApiResponse<List<Contract>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
@@ -170,7 +171,11 @@ public class DashboardViewModel extends AndroidViewModel {
     }
 
     public void loadMaintenanceRequests() {
-        api.getMaintenanceRequests().enqueue(new Callback<ApiResponse<List<MaintenanceRequest>>>() {
+        loadMaintenanceRequests(1, 10);
+    }
+
+    public void loadMaintenanceRequests(int page, int limit) {
+        api.getMaintenanceRequests(page, limit).enqueue(new Callback<ApiResponse<List<MaintenanceRequest>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<MaintenanceRequest>>> call, Response<ApiResponse<List<MaintenanceRequest>>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {

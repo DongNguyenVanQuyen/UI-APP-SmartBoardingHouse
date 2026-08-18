@@ -17,6 +17,8 @@
 @rem
 
 @if "%DEBUG%"=="" @echo off
+@rem Force JAVA_HOME to use Android Studio's bundled JBR to avoid redhat JRE extension issue
+set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr
 @rem ##########################################################################
 @rem
 @rem  Gradle startup script for Windows

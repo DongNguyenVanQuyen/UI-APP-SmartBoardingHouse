@@ -21,6 +21,15 @@ public class InvoiceAdapter extends RecyclerView.Adapter<InvoiceAdapter.VH> {
     public InvoiceAdapter(OnClickListener listener) { this.listener = listener; }
 
     public void setData(List<Invoice> list) { data = list; notifyDataSetChanged(); }
+    public void appendData(List<Invoice> list) {
+        if (list != null) {
+            int startSize = data.size();
+            data.addAll(list);
+            notifyItemRangeInserted(startSize, list.size());
+        }
+    }
+    public void clearData() { data.clear(); notifyDataSetChanged(); }
+    public boolean isEmpty() { return data.isEmpty(); }
 
     @NonNull @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

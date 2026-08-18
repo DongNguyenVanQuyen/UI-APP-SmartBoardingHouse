@@ -102,9 +102,9 @@
 
                 <!-- Total -->
                 <androidx.cardview.widget.CardView
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
+                    android:layout_columnSpan="2"
                     android:layout_margin="6dp"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="2dp">
@@ -170,6 +170,41 @@
 
                 </androidx.cardview.widget.CardView>
 
+                <!-- Debt -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Nợ còn lại"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvDebtYear"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/red_danger"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
                 <!-- Electric -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
@@ -205,7 +240,7 @@
 
                 </androidx.cardview.widget.CardView>
 
-                <!-- Debt -->
+                <!-- Water -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -223,16 +258,16 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Nợ còn lại"
+                            android:text="Tiền nước / năm"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
 
                         <TextView
-                            android:id="@+id/tvDebtYear"
+                            android:id="@+id/tvWaterTotal"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="--"
-                            android:textColor="@color/red_danger"
+                            android:textColor="@color/blue_primary"
                             android:textSize="16sp"
                             android:textStyle="bold" />
 
@@ -270,12 +305,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="240dp" />
 
-                    <!-- Hidden value used by code -->
-                    <TextView
-                        android:id="@+id/tvWaterTotal"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone" />
+
 
                 </LinearLayout>
 

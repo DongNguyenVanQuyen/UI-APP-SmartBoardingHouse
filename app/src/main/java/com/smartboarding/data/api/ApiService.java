@@ -58,7 +58,9 @@ public interface ApiService {
 
     // ─── CONTRACT ───────────────────────────────────────
     @GET("contracts")
-    Call<ApiResponse<List<Contract>>> getContracts();
+    Call<ApiResponse<List<Contract>>> getContracts(
+            @Query("page") Integer page,
+            @Query("limit") Integer limit);
 
     @GET("contracts/{id}")
     Call<ApiResponse<Contract>> getContractById(@Path("id") String id);
@@ -75,7 +77,9 @@ public interface ApiService {
     @GET("invoices")
     Call<ApiResponse<List<Invoice>>> getInvoicesFiltered(
             @Query("contract") String contractId,
-            @Query("type") String type);
+            @Query("type") String type,
+            @Query("page") Integer page,
+            @Query("limit") Integer limit);
 
     @GET("invoices/{id}")
     Call<ApiResponse<Invoice>> getInvoiceById(@Path("id") String id);
@@ -192,7 +196,9 @@ public interface ApiService {
     );
 
     @GET("maintenance-requests")
-    Call<ApiResponse<List<MaintenanceRequest>>> getMaintenanceRequests();
+    Call<ApiResponse<List<MaintenanceRequest>>> getMaintenanceRequests(
+            @Query("page") Integer page,
+            @Query("limit") Integer limit);
 
     @GET("maintenance-requests/{id}")
     Call<ApiResponse<MaintenanceRequest>> getMaintenanceById(@Path("id") String id);
