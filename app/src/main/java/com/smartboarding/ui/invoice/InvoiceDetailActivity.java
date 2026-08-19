@@ -70,7 +70,7 @@ public class InvoiceDetailActivity extends AppCompatActivity {
             public void onFailure(Call<ApiResponse<Invoice>> call, Throwable t) {
                 binding.progressBar.setVisibility(View.GONE);
                 Log.e("INVOICE_ERROR", Log.getStackTraceString(t));
-                Toast.makeText(InvoiceDetailActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(InvoiceDetailActivity.this, "Lỗi kết nối mạng, vui lòng thử lại.", Toast.LENGTH_LONG).show();
             }
         });
     }

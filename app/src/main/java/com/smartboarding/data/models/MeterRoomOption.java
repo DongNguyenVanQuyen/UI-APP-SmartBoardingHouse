@@ -10,4 +10,5 @@ public class MeterRoomOption {
     @SerializedName("contractNumber") public String contractNumber;
     @SerializedName("roomId")         public String roomId;
     @SerializedName("roomNumber")     public String roomNumber;
+    @SerializedName("isSelected")     public boolean isSelected;
 }

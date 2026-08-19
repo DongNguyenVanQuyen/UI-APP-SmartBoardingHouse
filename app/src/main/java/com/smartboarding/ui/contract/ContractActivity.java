@@ -101,7 +101,7 @@ public class ContractActivity extends AppCompatActivity {
                 binding.progressBar.setVisibility(View.GONE);
                 Log.e("CONTRACT_ERROR", Log.getStackTraceString(t));
                 if (reset) binding.tvEmpty.setVisibility(View.VISIBLE);
-                Toast.makeText(ContractActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(ContractActivity.this, "Lỗi kết nối mạng, vui lòng thử lại.", Toast.LENGTH_LONG).show();
             }
         });
     }

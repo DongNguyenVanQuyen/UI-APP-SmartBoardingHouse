@@ -79,7 +79,7 @@ public class DashboardFragment extends Fragment {
             Log.d("DASHBOARD_DEBUG", "Nhận data từ ViewModel: " + (data == null ? "NULL (LỖI PARSE)" : "CÓ DATA"));
 
             if (data == null || !isAdded()) {
-                if (data == null) Toast.makeText(requireContext(), "Lỗi: Data bị null do parse JSON thất bại", Toast.LENGTH_LONG).show();
+                if (data == null) Toast.makeText(requireContext(), "Không thể kết nối máy chủ. Vui lòng thử lại sau.", Toast.LENGTH_LONG).show();
                 return;
             }
             bindDashboard(data);
@@ -93,7 +93,7 @@ public class DashboardFragment extends Fragment {
             // NÚT DEBUG 2: In chi tiết lỗi ra logcat và màn hình
             Log.e("DASHBOARD_DEBUG", "Lỗi từ ViewModel: " + msg);
             if (msg != null && !msg.isEmpty() && isAdded()) {
-                Toast.makeText(requireContext(), "Lỗi API: " + msg, Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), "Không thể tải dữ liệu. Vui lòng kiểm tra mạng.", Toast.LENGTH_LONG).show();
             }
         });
     }

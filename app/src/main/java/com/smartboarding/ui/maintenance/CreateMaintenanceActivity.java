@@ -206,7 +206,7 @@ public class CreateMaintenanceActivity extends AppCompatActivity {
                         binding.btnSubmit.setEnabled(true);
                         cleanupTempFiles(tempFiles);
                         t.printStackTrace();
-                        Toast.makeText(CreateMaintenanceActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(CreateMaintenanceActivity.this, "Lỗi kết nối mạng, vui lòng thử lại.", Toast.LENGTH_LONG).show();
                     }
                 });
     }

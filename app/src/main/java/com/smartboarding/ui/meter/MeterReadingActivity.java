@@ -215,8 +215,16 @@ public class MeterReadingActivity extends AppCompatActivity {
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
-        // Mặc định chọn phòng đầu tiên trong danh sách.
-        selectedContractId = roomOptions.get(0).contractId;
+        // Mặc định chọn phòng đang được chọn ở Dashboard
+        int defaultPosition = 0;
+        for (int i = 0; i < roomOptions.size(); i++) {
+            if (roomOptions.get(i).isSelected) {
+                defaultPosition = i;
+                break;
+            }
+        }
+        binding.spinnerRoom.setSelection(defaultPosition);
+        selectedContractId = roomOptions.get(defaultPosition).contractId;
         loadPreviousReading();
     }
 
