@@ -22,6 +22,7 @@ public class SocketManager {
     private static SocketManager instance;
     private Socket socket;
     private final Gson gson = new Gson();
+    private String currentToken;
 
     private SocketManager() {}
 
@@ -33,9 +34,11 @@ public class SocketManager {
     }
 
     public void connect(String jwtToken) {
-        if (socket != null && socket.connected()) {
+        if (socket != null && socket.connected() && jwtToken != null && jwtToken.equals(currentToken)) {
             return;
         }
+        disconnect();
+        currentToken = jwtToken;
         try {
             IO.Options options = new IO.Options();
             options.reconnection = true;

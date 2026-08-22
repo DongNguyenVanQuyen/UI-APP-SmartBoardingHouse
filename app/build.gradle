@@ -13,8 +13,8 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
-        buildConfigField "String", "BASE_URL", '"https://smartboardinghouse.onrender.com/api/"'
-//        buildConfigField "String", "BASE_URL", '"http://192.168.2.11:8080/api/"'
+//        buildConfigField "String", "BASE_URL", '"https://smartboardinghouse.onrender.com/api/"'
+        buildConfigField "String", "BASE_URL", '"http://192.168.2.11:8080/api/"'
 
     }
 
