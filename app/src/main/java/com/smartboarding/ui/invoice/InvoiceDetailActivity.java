@@ -119,7 +119,7 @@ public class InvoiceDetailActivity extends AppCompatActivity {
                 binding.tvStatus.setBackgroundResource(R.drawable.bg_badge_expired);
                 binding.btnPay.setVisibility(View.GONE);
                 Toast.makeText(this,
-                        "Hóa đơn này đã bị hủy do hợp đồng liên quan đã kết thúc",
+                        "Hóa đơn đã bị hủy hãy liên hệ với chủ nhà để được hỗ trợ",
                         Toast.LENGTH_LONG).show();
                 break;
             default:

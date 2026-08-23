@@ -575,8 +575,22 @@ public class MeterReadingActivity extends AppCompatActivity {
                             "Tháng này đã có chỉ số. Bấm Lưu lại để cập nhật.",
                             Toast.LENGTH_LONG).show();
                 } else {
+                    String errorMsg = "Lưu thất bại";
+                    try {
+                        if (response.code() == 400) {
+                            errorMsg = "Số chỉ số mới đang thấp hơn số cũ, vui lòng kiểm tra lại";
+                        } else if (response.errorBody() != null) {
+                            String errStr = response.errorBody().string();
+                            org.json.JSONObject jObj = new org.json.JSONObject(errStr);
+                            if (jObj.has("message")) {
+                                errorMsg = jObj.getString("message");
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Parse error", e);
+                    }
                     Toast.makeText(MeterReadingActivity.this,
-                            "Lưu thất bại", Toast.LENGTH_SHORT).show();
+                            errorMsg, Toast.LENGTH_LONG).show();
                 }
             }
             @Override
